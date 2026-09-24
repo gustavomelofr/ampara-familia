@@ -51,10 +51,7 @@
       "typedRoutes": true
     },
     "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "2d897902-3caa-427c-b047-42403edd1c43"
-      }
+      "router": {}
     },
     "owner": "gus4001"
   }

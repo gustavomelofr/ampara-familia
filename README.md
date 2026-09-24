@@ -40,10 +40,21 @@ npx expo install --check
 
 ## Publicação
 
-O diretório é separado de `estagia`; o projeto EAS e o registro “Ampara Família” do App Store Connect já existem, usando o bundle ID `com.gustavo.ampara`. Antes de uma distribuição pública, revisar a marca, adicionar uma política de privacidade pública e finalizar os textos de loja. A assinatura iOS ainda precisa ser configurada/validada no EAS. O ambiente atual é Linux, portanto uma build nativa é feita no EAS remoto; validação no simulador do Xcode requer macOS.
+O diretório é separado de `estagia`; o registro “Ampara Família” do App Store Connect já existe, usando o bundle ID `com.gustavo.ampara`. Antes de uma distribuição pública, revisar a marca, adicionar uma política de privacidade pública e finalizar os textos de loja.
 
-### Build manual via GitHub Actions
+### Build iOS pelo GitHub Actions (sem EAS)
 
-O workflow `.github/workflows/ios-testflight.yml` é manual (`workflow_dispatch`) e só inicia se a opção de confirmação de upload estiver marcada. Depois de conectar este diretório a um repositório GitHub, configure os secrets `EXPO_TOKEN`, `ASC_API_KEY_BASE64`, `ASC_API_KEY_ID` e `ASC_API_ISSUER_ID`. O `.p8` deve ser convertido para Base64 localmente e cadastrado diretamente como secret, nunca versionado.
+O workflow `.github/workflows/ios-testflight.yml` usa um runner macOS hospedado pelo GitHub, gera o projeto nativo com Expo Prebuild, compila e assina com Xcode e envia o `.ipa` ao TestFlight com Fastlane. Não usa EAS Build, EAS Submit nem requer `EXPO_TOKEN`. O envio é manual e exige marcar explicitamente a confirmação de upload.
 
-O certificado de distribuição e o perfil de provisionamento precisam estar configurados no EAS antes de rodar o workflow. Uma configuração inicial interativa de assinatura Apple ainda é necessária; GitHub Actions não substitui esse passo. O workflow apenas envia o build ao TestFlight, não submete a versão para publicação pública.
+Configure estes secrets em **Settings → Secrets and variables → Actions** no repositório:
+
+- `IOS_DISTRIBUTION_CERTIFICATE_BASE64`: certificado Apple Distribution e chave privada em `.p12`, codificados em Base64.
+- `IOS_DISTRIBUTION_CERTIFICATE_PASSWORD`: senha que protege o `.p12`.
+- `IOS_APP_STORE_PROFILE_BASE64`: perfil App Store Connect `.mobileprovision`, codificado em Base64 e correspondente ao bundle ID `com.gustavo.ampara` e ao certificado acima.
+- `ASC_API_KEY_BASE64`: chave de equipe App Store Connect `.p8`, codificada em Base64.
+- `ASC_API_KEY_ID`: ID da chave `.p8`.
+- `ASC_API_ISSUER_ID`: Issuer ID da equipe no App Store Connect.
+
+Os arquivos de assinatura e as chaves privadas não devem ser versionados nem enviados pelo chat. O `.p12` e o perfil devem ser criados/baixados no Apple Developer Portal e armazenados somente como secrets do repositório. A chave de equipe do App Store Connect precisa ter acesso ao app e papel **App Manager** para upload e metadados do TestFlight.
+
+Para publicar um build: abra **Actions → Build and upload iOS to TestFlight → Run workflow**, informe uma mensagem e marque a confirmação. O workflow só faz upload para processamento no TestFlight; a distribuição a grupos de testers e a publicação pública continuam sendo controladas no App Store Connect.
