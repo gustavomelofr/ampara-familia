@@ -1,0 +1,81 @@
+name: Build and upload iOS to TestFlight
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_testflight_upload:
+        description: Confirm that this build should be uploaded to TestFlight
+        required: true
+        type: boolean
+        default: false
+      message:
+        description: Short label for this build
+        required: false
+        type: string
+        default: Manual TestFlight build
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ampara-ios-testflight
+  cancel-in-progress: false
+
+jobs:
+  build-and-submit:
+    if: ${{ inputs.confirm_testflight_upload }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out app
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run checks
+        run: |
+          npm run typecheck
+          npm test
+          npx expo install --check
+
+      - name: Prepare App Store Connect API key
+        shell: bash
+        env:
+          ASC_API_KEY_BASE64: ${{ secrets.ASC_API_KEY_BASE64 }}
+          ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+          ASC_API_ISSUER_ID: ${{ secrets.ASC_API_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+          : "${ASC_API_KEY_BASE64:?Add the ASC_API_KEY_BASE64 GitHub secret}"
+          : "${ASC_API_KEY_ID:?Add the ASC_API_KEY_ID GitHub secret}"
+          : "${ASC_API_ISSUER_ID:?Add the ASC_API_ISSUER_ID GitHub secret}"
+
+          key_path="$RUNNER_TEMP/AuthKey_${ASC_API_KEY_ID}.p8"
+          printf '%s' "$ASC_API_KEY_BASE64" | base64 --decode > "$key_path"
+          chmod 600 "$key_path"
+          {
+            printf 'EXPO_ASC_API_KEY_PATH=%s\n' "$key_path"
+            printf 'EXPO_ASC_KEY_ID=%s\n' "$ASC_API_KEY_ID"
+            printf 'EXPO_ASC_ISSUER_ID=%s\n' "$ASC_API_ISSUER_ID"
+          } >> "$GITHUB_ENV"
+
+      - name: Build and submit to TestFlight
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          BUILD_MESSAGE: ${{ inputs.message }}
+        run: |
+          set -euo pipefail
+          : "${EXPO_TOKEN:?Add the EXPO_TOKEN GitHub secret}"
+          npx eas-cli@latest build \
+            --platform ios \
+            --profile production \
+            --non-interactive \
+            --auto-submit-with-profile production \
+            --message "$BUILD_MESSAGE"
