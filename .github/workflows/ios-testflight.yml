@@ -48,6 +48,31 @@ jobs:
       - name: Generate the iOS project
         run: npx expo prebuild --platform ios --clean --no-install
 
+      - name: Set a unique iOS build number
+        shell: bash
+        run: |
+          set -euo pipefail
+          build_number="${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}"
+          python3 - "$build_number" <<'PY'
+          import plistlib
+          import sys
+          from pathlib import Path
+
+          info_plists = list(Path("ios").glob("*/Info.plist"))
+          if len(info_plists) != 1:
+              raise SystemExit(f"Expected one app Info.plist, found {len(info_plists)}")
+
+          info_plist = info_plists[0]
+          with info_plist.open("rb") as source:
+              data = plistlib.load(source)
+          data["CFBundleVersion"] = sys.argv[1]
+          with info_plist.open("wb") as destination:
+              plistlib.dump(data, destination, fmt=plistlib.FMT_XML, sort_keys=False)
+          print(f"Set CFBundleVersion to {sys.argv[1]}")
+          PY
+
+          printf 'IOS_BUILD_NUMBER=%s\n' "$build_number" >> "$GITHUB_ENV"
+
       - name: Install CocoaPods dependencies
         run: pod install --project-directory=ios
 
@@ -164,7 +189,7 @@ jobs:
             "DEVELOPMENT_TEAM=$APPLE_TEAM_ID" \
             "PROVISIONING_PROFILE=$IOS_PROFILE_UUID" \
             "PROVISIONING_PROFILE_SPECIFIER=$IOS_PROFILE_NAME" \
-            "CURRENT_PROJECT_VERSION=$GITHUB_RUN_ID"
+            "CURRENT_PROJECT_VERSION=$IOS_BUILD_NUMBER"
 
       - name: Export signed IPA
         shell: bash

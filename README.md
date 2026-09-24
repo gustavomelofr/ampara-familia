@@ -44,7 +44,7 @@ O diretório é separado de `estagia`; o registro “Ampara Família” do App S
 
 ### Build iOS pelo GitHub Actions (sem EAS)
 
-O workflow `.github/workflows/ios-testflight.yml` usa um runner macOS hospedado pelo GitHub, gera o projeto nativo com Expo Prebuild, compila e assina com Xcode e envia o `.ipa` ao TestFlight com Fastlane. Não usa EAS Build, EAS Submit nem requer `EXPO_TOKEN`. O envio é manual e exige marcar explicitamente a confirmação de upload.
+O workflow `.github/workflows/ios-testflight.yml` usa um runner macOS hospedado pelo GitHub, gera o projeto nativo com Expo Prebuild, compila e assina com Xcode e envia o `.ipa` ao TestFlight com Fastlane. Não usa EAS Build, EAS Submit nem requer `EXPO_TOKEN`. O envio é manual, exige marcar explicitamente a confirmação de upload e gera um número de build único por execução.
 
 Configure estes secrets em **Settings → Secrets and variables → Actions** no repositório:
 
