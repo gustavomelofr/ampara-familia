@@ -72,6 +72,13 @@ jobs:
           printf '%s' "$IOS_DISTRIBUTION_CERTIFICATE_BASE64" | base64 -D > "$p12_path"
           printf '%s' "$IOS_APP_STORE_PROFILE_BASE64" | base64 -D > "$profile_path"
 
+          if ! openssl pkcs12 -legacy -in "$p12_path" \
+            -passin env:IOS_DISTRIBUTION_CERTIFICATE_PASSWORD \
+            -noout; then
+            echo "The distribution .p12 could not be opened; verify its password and encoding." >&2
+            exit 1
+          fi
+
           security create-keychain -p "$keychain_password" "$keychain_path"
           security set-keychain-settings -lut 21600 "$keychain_path"
           security unlock-keychain -p "$keychain_password" "$keychain_path"
