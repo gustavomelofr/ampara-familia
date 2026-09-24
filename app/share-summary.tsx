@@ -1,4 +1,4 @@
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useState } from 'react';
 import { Share, StyleSheet, Switch, View } from 'react-native';
@@ -6,7 +6,9 @@ import { Share, StyleSheet, Switch, View } from 'react-native';
 import { AppScreen } from '@/src/components/AppScreen';
 import { AppText } from '@/src/components/AppText';
 import { ActivePersonNotice } from '@/src/components/ActivePersonNotice';
+import { PageHeader } from '@/src/components/PageHeader';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
+import { ScreenMessage } from '@/src/components/ScreenMessage';
 import { getCareProfile, listDocuments, listEvents, listExpenses, listMedications, listTasks } from '@/src/database/repository';
 import type { CareDocument, CareEvent, CareProfile, CareTask, Expense, MedicationNote } from '@/src/database/models';
 import { formatDate, toLocalIsoDate } from '@/src/utils/date';
@@ -20,10 +22,18 @@ const labels: Record<SummaryKey, string> = {
   documents: 'Checklist de documentos',
   medications: 'Lista informativa de medicamentos',
 };
+const limits: Record<SummaryKey, string> = {
+  events: 'mais próximos, até 5',
+  tasks: 'em aberto, até 8',
+  expenses: 'mais recentes, até 8',
+  documents: 'todos os anotados',
+  medications: 'todos os ativos',
+};
 const currency = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
 export default function ShareSummaryScreen() {
   const db = useSQLiteContext();
+  const router = useRouter();
   const [profile, setProfile] = useState<CareProfile | null>(null);
   const [events, setEvents] = useState<CareEvent[]>([]);
   const [tasks, setTasks] = useState<CareTask[]>([]);
@@ -33,8 +43,17 @@ export default function ShareSummaryScreen() {
   const [selected, setSelected] = useState<Record<SummaryKey, boolean>>({
     events: true, tasks: true, expenses: false, documents: false, medications: false,
   });
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const load = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    setProfile(null);
+    setEvents([]);
+    setTasks([]);
+    setExpenses([]);
+    setDocuments([]);
+    setMedications([]);
     try {
       const [careProfile, nextEvents, allTasks, allExpenses, allDocuments, allMedications] = await Promise.all([
         getCareProfile(db),
@@ -53,6 +72,8 @@ export default function ShareSummaryScreen() {
       setError('');
     } catch {
       setError('Não foi possível preparar o resumo. Tente novamente.');
+    } finally {
+      setLoading(false);
     }
   }, [db]);
   useFocusEffect(useCallback(() => { void load(); }, [load]));
@@ -73,50 +94,52 @@ export default function ShareSummaryScreen() {
 
   const toggle = (key: SummaryKey, value: boolean) => setSelected((current) => ({ ...current, [key]: value }));
   const share = async () => {
+    if (loading || error || !content.length) return;
     try { await Share.share({ message: preview, title: 'Resumo de cuidado' }); }
     catch { setError('Não foi possível abrir as opções de compartilhamento.'); }
   };
 
   return (
     <AppScreen bottomInset={24}>
-      <AppText accessibilityRole="header" variant="display" style={styles.title}>Você escolhe o que enviar.</AppText>
-      <AppText tone="muted" style={styles.subtitle}>Revise o texto abaixo antes de abrir as opções do aparelho. Nada é enviado sem seu toque.</AppText>
+      <PageHeader eyebrow="COMPARTILHAMENTO" title="Você escolhe o que enviar." subtitle="Revise o texto antes de abrir as opções do aparelho. Nada é enviado sem seu toque." onBack={() => router.back()} />
       <ActivePersonNotice />
+      {loading ? <ScreenMessage title="Preparando a prévia" message="Reunindo somente os registros deste perfil." /> : null}
       <View style={styles.options}>
         {(Object.keys(labels) as SummaryKey[]).map((key, index) => (
           <View key={key} style={[styles.option, index > 0 && styles.divider]}>
             <View style={styles.optionCopy}>
               <AppText variant="label">{labels[key]}</AppText>
-              <AppText tone="muted" variant="small">{data[key].length} {data[key].length === 1 ? 'registro' : 'registros'}</AppText>
+              <AppText tone="muted" variant="small">{loading ? 'Carregando registros…' : data[key].length ? `${data[key].length} ${data[key].length === 1 ? 'registro' : 'registros'} · ${limits[key]}` : 'Nenhum registro anotado'}</AppText>
             </View>
             <Switch
               accessibilityLabel={`Incluir ${labels[key].toLocaleLowerCase('pt-BR')}`}
               value={selected[key]}
               onValueChange={(value) => toggle(key, value)}
+              disabled={loading || Boolean(error)}
               trackColor={{ false: theme.colors.border, true: theme.colors.forest }}
               thumbColor={theme.colors.surface}
             />
           </View>
         ))}
       </View>
-      <AppText variant="label" style={styles.previewLabel}>Prévia</AppText>
+      <View style={styles.previewHeading}>
+        <AppText accessibilityRole="header" variant="label">Prévia</AppText>
+        <AppText tone="muted" variant="small">O conteúdo selecionado abaixo</AppText>
+      </View>
       <View style={styles.preview}><AppText selectable variant="small">{preview}</AppText></View>
-      {error ? <AppText tone="danger" accessibilityRole="alert" style={styles.error}>{error}</AppText> : null}
-      <PrimaryButton title="Abrir compartilhamento" onPress={() => void share()} disabled={!content.length} />
+      {error ? <ScreenMessage tone="error" title="Não foi possível preparar o resumo" message={error} actionLabel="Tentar novamente" onAction={() => void load()} /> : null}
+      <PrimaryButton title="Abrir compartilhamento" onPress={() => void share()} disabled={loading || Boolean(error) || !content.length} />
       <AppText tone="muted" variant="small" style={styles.footer}>Inclua apenas as informações necessárias para a conversa que você quer ter.</AppText>
     </AppScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  title: { marginTop: 6 },
-  subtitle: { marginTop: 8, marginBottom: 24 },
   options: { borderTopWidth: 1, borderTopColor: theme.colors.border },
   option: { minHeight: 66, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   divider: { borderTopWidth: 1, borderTopColor: theme.colors.border },
   optionCopy: { flex: 1, gap: 3 },
-  previewLabel: { marginTop: 24, marginBottom: 10 },
+  previewHeading: { marginTop: 24, marginBottom: 10, gap: 3 },
   preview: { borderWidth: 1, borderColor: theme.colors.border, borderRadius: theme.radius.md, padding: 16, backgroundColor: theme.colors.surface, marginBottom: 18 },
-  error: { marginBottom: 14 },
   footer: { textAlign: 'center', marginTop: 12 },
 });

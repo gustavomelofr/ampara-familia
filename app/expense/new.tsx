@@ -9,8 +9,10 @@ import { ActivePersonNotice } from '@/src/components/ActivePersonNotice';
 import { DateField } from '@/src/components/DateField';
 import { Field } from '@/src/components/Field';
 import { OptionChips } from '@/src/components/OptionChips';
+import { PageHeader } from '@/src/components/PageHeader';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { createExpense, RepositoryError } from '@/src/database/repository';
+import { parseBrlAmountToCents } from '@/src/utils/money';
 import { toLocalIsoDate } from '@/src/utils/date';
 
 const categories = ['Farmácia', 'Transporte', 'Consulta', 'Casa', 'Outro'] as const;
@@ -30,8 +32,9 @@ export default function NewExpenseScreen() {
     setSaving(true);
     setError('');
     try {
-      const normalized = Number(amount.replace(/\./g, '').replace(',', '.'));
-      await createExpense(db, { title, amountCents: Math.round(normalized * 100), category, spentOn, notes });
+      const amountCents = parseBrlAmountToCents(amount);
+      if (amountCents === null) throw new RepositoryError('Informe um valor maior que zero, como 25,90.');
+      await createExpense(db, { title, amountCents, category, spentOn, notes });
       router.back();
     } catch (cause) {
       setError(cause instanceof RepositoryError ? cause.message : 'Não foi possível salvar o gasto.');
@@ -41,11 +44,10 @@ export default function NewExpenseScreen() {
   };
   return (
     <AppScreen bottomInset={24}>
-      <AppText accessibilityRole="header" variant="display" style={styles.title}>Anote um gasto.</AppText>
-      <AppText tone="muted" style={styles.subtitle}>Um registro para a família consultar, não uma conta compartilhada.</AppText>
+      <PageHeader eyebrow="DESPESAS" title="Anote um gasto." subtitle="Um registro para a família consultar, não uma conta compartilhada." onBack={() => router.back()} />
       <ActivePersonNotice interactive={false} />
       <Field label="O que foi pago?" value={title} onChangeText={setTitle} placeholder="Ex.: remédio de uso contínuo" />
-      <Field label="Valor em reais" value={amount} onChangeText={setAmount} placeholder="0,00" keyboardType="decimal-pad" />
+      <Field label="Valor em reais" value={amount} onChangeText={setAmount} placeholder="0,00" keyboardType="decimal-pad" hint="Use vírgula para separar os centavos, por exemplo 25,90." />
       <OptionChips label="Categoria" value={category} onChange={setCategory} options={categories.map((value) => ({ value, label: value }))} />
       <DateField label="Data" value={spentOn} onChange={setSpentOn} />
       <Field label="Observações" value={notes} onChangeText={setNotes} placeholder="Opcional" multiline />
@@ -55,4 +57,4 @@ export default function NewExpenseScreen() {
   );
 }
 
-const styles = StyleSheet.create({ title: { marginTop: 6 }, subtitle: { marginTop: 8, marginBottom: 24 }, error: { marginBottom: 14 } });
+const styles = StyleSheet.create({ error: { marginBottom: 14 } });

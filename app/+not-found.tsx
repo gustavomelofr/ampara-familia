@@ -2,17 +2,17 @@ import { Link, Stack } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/src/components/AppText';
+import { PageHeader } from '@/src/components/PageHeader';
 import { theme } from '@/src/theme';
 
 export default function NotFoundScreen() {
   return (
     <>
-      <Stack.Screen options={{ title: 'Oops!' }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.container}>
-        <AppText accessibilityRole="header" variant="title">Essa tela não existe.</AppText>
-
+        <PageHeader eyebrow="AMPARA FAMÍLIA" title="Essa tela não existe." subtitle="O endereço pode ter mudado ou não estar disponível." />
         <Link href="/" style={styles.link}>
-          <AppText tone="forest" variant="label">Voltar ao início</AppText>
+          <AppText tone="forest" variant="label">Ir para Hoje</AppText>
         </Link>
       </View>
     </>

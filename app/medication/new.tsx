@@ -7,6 +7,7 @@ import { AppScreen } from '@/src/components/AppScreen';
 import { AppText } from '@/src/components/AppText';
 import { ActivePersonNotice } from '@/src/components/ActivePersonNotice';
 import { Field } from '@/src/components/Field';
+import { PageHeader } from '@/src/components/PageHeader';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { createMedication, RepositoryError } from '@/src/database/repository';
 import { theme } from '@/src/theme';
@@ -21,6 +22,7 @@ export default function NewMedicationScreen() {
   const [saving, setSaving] = useState(false);
   const save = async () => {
     setSaving(true);
+    setError('');
     try {
       await createMedication(db, { name, schedule, notes });
       router.back();
@@ -30,8 +32,7 @@ export default function NewMedicationScreen() {
   };
   return (
     <AppScreen bottomInset={24}>
-      <AppText accessibilityRole="header" variant="display" style={styles.title}>Anote para consultar.</AppText>
-      <AppText tone="muted" style={styles.subtitle}>Transcreva somente a informação que sua família já tem.</AppText>
+      <PageHeader eyebrow="MEDICAMENTOS" title="Anote para consultar." subtitle="Transcreva somente a informação que sua família já tem." onBack={() => router.back()} />
       <ActivePersonNotice interactive={false} />
       <Field label="Nome do medicamento" value={name} onChangeText={setName} placeholder="Conforme aparece na embalagem" />
       <Field label="Horário ou orientação registrada" value={schedule} onChangeText={setSchedule} placeholder="Ex.: manhã, conforme receita" />
@@ -43,4 +44,4 @@ export default function NewMedicationScreen() {
   );
 }
 
-const styles = StyleSheet.create({ title: { marginTop: 6 }, subtitle: { marginTop: 8, marginBottom: 24 }, notice: { padding: 14, borderRadius: theme.radius.md, backgroundColor: theme.colors.claySoft, marginBottom: 18 }, error: { marginBottom: 14 } });
+const styles = StyleSheet.create({ notice: { padding: 14, borderRadius: theme.radius.md, backgroundColor: theme.colors.claySoft, marginBottom: 18 }, error: { marginBottom: 14 } });

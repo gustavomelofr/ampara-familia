@@ -1,24 +1,31 @@
 import { SymbolView } from 'expo-symbols';
 import { Tabs } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { theme } from '@/src/theme';
 
 export default function TabLayout() {
+  const insets = useSafeAreaInsets();
+  const bottomInset = Math.max(insets.bottom, 6);
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
+        tabBarHideOnKeyboard: true,
         tabBarActiveTintColor: theme.colors.forest,
         tabBarInactiveTintColor: theme.colors.muted,
         tabBarStyle: {
           backgroundColor: theme.colors.surface,
           borderTopColor: theme.colors.border,
+          borderTopWidth: 1,
           elevation: 0,
           shadowOpacity: 0,
-          height: 62,
-          paddingTop: 7,
+          height: 56 + bottomInset,
+          paddingTop: 6,
+          paddingBottom: bottomInset,
         },
-        tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
+        tabBarLabelStyle: { fontSize: 12, lineHeight: 16, fontWeight: '600' },
       }}>
       <Tabs.Screen name="index" options={{
         title: 'Hoje',

@@ -29,11 +29,17 @@ export function DateField({ label, value, onChange, optional = false }: {
         <AppText variant="label">{label}{optional ? ' (opcional)' : ''}</AppText>
         <TextInput
           accessibilityLabel={label}
+          accessibilityHint={optional ? 'Campo opcional. Deixe vazio se não houver data.' : undefined}
           value={value}
           onChangeText={onChange}
           placeholder="AAAA-MM-DD"
           style={styles.input}
         />
+        {optional && value ? (
+          <Pressable accessibilityRole="button" accessibilityLabel={`Limpar ${label.toLocaleLowerCase('pt-BR')}`} onPress={() => onChange('')} hitSlop={8} style={styles.clearDate}>
+            <AppText tone="forest" variant="small">Limpar data</AppText>
+          </Pressable>
+        ) : null}
       </View>
     );
   }
@@ -53,6 +59,11 @@ export function DateField({ label, value, onChange, optional = false }: {
         <AppText tone={value ? 'ink' : 'muted'}>{value ? formatDate(value) : 'Escolher data'}</AppText>
         <AppText tone="forest" variant="label">Alterar</AppText>
       </Pressable>
+      {optional && value ? (
+        <Pressable accessibilityRole="button" accessibilityLabel={`Limpar ${label.toLocaleLowerCase('pt-BR')}`} onPress={() => onChange('')} hitSlop={8} style={styles.clearDate}>
+          <AppText tone="forest" variant="small">Limpar data</AppText>
+        </Pressable>
+      ) : null}
       {Platform.OS === 'ios' && showIOS ? (
         <DateTimePicker display="compact" mode="date" value={selectedDate} onValueChange={handleChange} />
       ) : null}
@@ -62,6 +73,7 @@ export function DateField({ label, value, onChange, optional = false }: {
 
 const styles = StyleSheet.create({
   group: { gap: 8, marginBottom: 18 },
-  input: { minHeight: 54, borderWidth: 1, borderColor: theme.colors.border, borderRadius: theme.radius.md, paddingHorizontal: 15, color: theme.colors.ink, backgroundColor: theme.colors.surface, fontSize: 16 },
-  dateButton: { minHeight: 54, borderWidth: 1, borderColor: theme.colors.border, borderRadius: theme.radius.md, paddingHorizontal: 15, backgroundColor: theme.colors.surface, alignItems: 'center', justifyContent: 'space-between', flexDirection: 'row' },
+  input: { minHeight: 56, borderWidth: 1, borderColor: theme.colors.border, borderRadius: theme.radius.md, paddingHorizontal: 15, color: theme.colors.ink, backgroundColor: theme.colors.surface, fontSize: 16 },
+  dateButton: { minHeight: 56, borderWidth: 1, borderColor: theme.colors.border, borderRadius: theme.radius.md, paddingHorizontal: 15, backgroundColor: theme.colors.surface, alignItems: 'center', justifyContent: 'space-between', flexDirection: 'row' },
+  clearDate: { alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center', paddingHorizontal: 2 },
 });

@@ -8,6 +8,7 @@ import { AppText } from '@/src/components/AppText';
 import { ActivePersonNotice } from '@/src/components/ActivePersonNotice';
 import { DateField } from '@/src/components/DateField';
 import { Field } from '@/src/components/Field';
+import { PageHeader } from '@/src/components/PageHeader';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { createDocument, RepositoryError } from '@/src/database/repository';
 
@@ -21,6 +22,7 @@ export default function NewDocumentScreen() {
   const [saving, setSaving] = useState(false);
   const save = async () => {
     setSaving(true);
+    setError('');
     try {
       await createDocument(db, { title, location, expiresOn });
       router.back();
@@ -30,8 +32,7 @@ export default function NewDocumentScreen() {
   };
   return (
     <AppScreen bottomInset={24}>
-      <AppText accessibilityRole="header" variant="display" style={styles.title}>Onde está o documento?</AppText>
-      <AppText tone="muted" style={styles.subtitle}>Registre o nome e um lugar para procurar.</AppText>
+      <PageHeader eyebrow="DOCUMENTOS" title="Onde está o documento?" subtitle="Registre o nome e um lugar para procurar." onBack={() => router.back()} />
       <ActivePersonNotice interactive={false} />
       <Field label="Nome do documento" value={title} onChangeText={setTitle} placeholder="Ex.: cartão do plano de saúde" />
       <Field label="Onde encontrar" value={location} onChangeText={setLocation} placeholder="Ex.: pasta azul na gaveta" />
@@ -42,4 +43,4 @@ export default function NewDocumentScreen() {
   );
 }
 
-const styles = StyleSheet.create({ title: { marginTop: 6 }, subtitle: { marginTop: 8, marginBottom: 24 }, error: { marginBottom: 14 } });
+const styles = StyleSheet.create({ error: { marginBottom: 14 } });

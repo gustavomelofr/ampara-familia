@@ -2,7 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import * as Notifications from 'expo-notifications';
 import { useEffect, useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { AppScreen } from '@/src/components/AppScreen';
 import { AppText } from '@/src/components/AppText';
@@ -10,7 +10,9 @@ import { ActivePersonNotice } from '@/src/components/ActivePersonNotice';
 import { DateField } from '@/src/components/DateField';
 import { Field } from '@/src/components/Field';
 import { OptionChips } from '@/src/components/OptionChips';
+import { PageHeader } from '@/src/components/PageHeader';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
+import { ScreenMessage } from '@/src/components/ScreenMessage';
 import { createEvent, getEvent, RepositoryError, setEventNotification, updateEvent } from '@/src/database/repository';
 import type { EventKind } from '@/src/database/models';
 import { toLocalIsoDate, fromIsoDate } from '@/src/utils/date';
@@ -36,12 +38,27 @@ export default function EventFormScreen() {
   const [notes, setNotes] = useState('');
   const [reminderMinutes, setReminderMinutes] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
+  const [loadError, setLoadError] = useState('');
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const [loading, setLoading] = useState(Boolean(eventId));
 
   useEffect(() => {
-    if (!eventId) return;
+    if (!eventId) {
+      setLoading(false);
+      return;
+    }
+    let active = true;
+    setLoading(true);
+    setLoadError('');
     void getEvent(db, eventId).then((event) => {
-      if (!event) return;
+      if (!active) return;
+      if (!event) {
+        setLoadError('Este compromisso não está disponível neste perfil.');
+        return;
+      }
       setTitle(event.title);
       setKind(event.kind);
       setDate(event.date);
@@ -49,21 +66,37 @@ export default function EventFormScreen() {
       setLocation(event.location ?? '');
       setNotes(event.notes ?? '');
       setReminderMinutes(event.reminderMinutes);
-    });
-  }, [db, eventId]);
+    }).catch(() => {
+      if (active) setLoadError('Não foi possível abrir o compromisso. Tente novamente.');
+    }).finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [db, eventId, loadAttempt]);
 
   const save = async () => {
+    if (saved) {
+      router.back();
+      return;
+    }
     setSaving(true);
     setError('');
-    let savedEventId = eventId;
+    setNotice('');
     try {
       const input = { title, kind, date, time, location, notes, reminderMinutes };
       const existing = eventId ? await getEvent(db, eventId) : null;
       const event = eventId ? await updateEvent(db, eventId, input) : await createEvent(db, input);
-      savedEventId = event.id;
-
-      if (existing?.notificationId) await Notifications.cancelScheduledNotificationAsync(existing.notificationId);
-      if (reminderMinutes !== null) {
+      let reminderNotice = '';
+      let canScheduleReminder = true;
+      if (existing?.notificationId) {
+        try {
+          await Notifications.cancelScheduledNotificationAsync(existing.notificationId);
+          await setEventNotification(db, event.id, null);
+        } catch {
+          canScheduleReminder = false;
+          reminderNotice = 'O compromisso foi salvo, mas não foi possível substituir o aviso anterior. Ele pode continuar no horário antigo.';
+        }
+      }
+      if (reminderMinutes !== null && canScheduleReminder) {
+        let scheduledNotificationId: string | null = null;
         try {
           const requested = await Notifications.getPermissionsAsync();
           const permission = requested.granted ? requested : await Notifications.requestPermissionsAsync();
@@ -73,7 +106,7 @@ export default function EventFormScreen() {
             eventDate.setHours(hours, minutes, 0, 0);
             eventDate.setMinutes(eventDate.getMinutes() - reminderMinutes);
             if (eventDate.getTime() > Date.now()) {
-              const notificationId = await Notifications.scheduleNotificationAsync({
+              scheduledNotificationId = await Notifications.scheduleNotificationAsync({
                 content: {
                   title: 'Um compromisso está chegando',
                   body: 'Abra o Ampara para revisar os detalhes que você registrou.',
@@ -81,21 +114,24 @@ export default function EventFormScreen() {
                 },
                 trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: eventDate },
               });
-              await setEventNotification(db, event.id, notificationId);
+              await setEventNotification(db, event.id, scheduledNotificationId);
             } else {
-              await setEventNotification(db, event.id, null);
-              Alert.alert('Compromisso salvo', 'A data escolhida já passou para este lembrete. Você pode revisar o compromisso na agenda.');
+              reminderNotice = 'A data já passou para o horário do lembrete. O compromisso continua na agenda, sem aviso agendado.';
             }
           } else {
-            await setEventNotification(db, event.id, null);
-            Alert.alert('Compromisso salvo', 'As notificações estão desativadas no aparelho. O compromisso continua na agenda.');
+            reminderNotice = 'As notificações estão desativadas no aparelho. O compromisso continua na agenda, sem aviso agendado.';
           }
         } catch {
-          await setEventNotification(db, event.id, null);
-          Alert.alert('Compromisso salvo', 'Não foi possível programar o lembrete. O compromisso continua na agenda.');
+          if (scheduledNotificationId) {
+            try { await Notifications.cancelScheduledNotificationAsync(scheduledNotificationId); } catch { /* O usuário já recebeu o aviso de falha abaixo. */ }
+          }
+          reminderNotice = 'Não foi possível programar o lembrete. O compromisso continua na agenda.';
         }
-      } else if (savedEventId) {
-        await setEventNotification(db, savedEventId, null);
+      }
+      if (reminderNotice) {
+        setNotice(reminderNotice);
+        setSaved(true);
+        return;
       }
       router.back();
     } catch (cause) {
@@ -105,10 +141,35 @@ export default function EventFormScreen() {
     }
   };
 
+  if (loading) {
+    return (
+      <AppScreen bottomInset={24}>
+        <PageHeader eyebrow="AGENDA" title="Abrindo compromisso." subtitle="Carregando os detalhes salvos neste aparelho." onBack={() => router.back()} />
+      </AppScreen>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <AppScreen bottomInset={24}>
+        <PageHeader eyebrow="AGENDA" title="Compromisso indisponível." onBack={() => router.back()} />
+        <ScreenMessage tone="error" title="Não foi possível abrir o compromisso" message={loadError} actionLabel="Tentar novamente" onAction={() => setLoadAttempt((attempt) => attempt + 1)} />
+      </AppScreen>
+    );
+  }
+
+  if (saved) {
+    return (
+      <AppScreen bottomInset={24}>
+        <PageHeader eyebrow="AGENDA" title="Compromisso salvo." onBack={() => router.back()} />
+        <ScreenMessage title="O registro está na agenda" message={notice} actionLabel="Voltar à agenda" onAction={() => router.back()} />
+      </AppScreen>
+    );
+  }
+
   return (
     <AppScreen bottomInset={24}>
-      <AppText accessibilityRole="header" variant="display" style={styles.title}>{eventId ? 'Revise o compromisso.' : 'O que não pode passar despercebido?'}</AppText>
-      <AppText tone="muted" style={styles.subtitle}>Registre o que sua família precisa ter à mão.</AppText>
+      <PageHeader eyebrow="AGENDA" title={eventId ? 'Revise o compromisso.' : 'O que precisa ficar marcado?'} subtitle="Registre o que sua família precisa ter à mão." onBack={() => router.back()} />
       <ActivePersonNotice interactive={false} />
       <Field label="Nome do compromisso" value={title} onChangeText={setTitle} placeholder="Ex.: consulta com a cardiologista" autoCapitalize="sentences" />
       <OptionChips label="Tipo" value={kind} onChange={setKind} options={eventOptions} />
@@ -136,8 +197,6 @@ export default function EventFormScreen() {
 }
 
 const styles = StyleSheet.create({
-  title: { marginTop: 6 },
-  subtitle: { marginTop: 8, marginBottom: 24 },
   privacyNote: { padding: 14, backgroundColor: theme.colors.forestSoft, borderRadius: theme.radius.md, marginBottom: 18 },
   error: { marginBottom: 14 },
 });

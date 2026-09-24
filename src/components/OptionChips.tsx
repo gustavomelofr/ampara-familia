@@ -17,14 +17,16 @@ export function OptionChips<T extends string>({
   return (
     <View style={styles.group}>
       <AppText variant="label">{label}</AppText>
-      <View style={styles.row}>
+      <View style={styles.row} accessibilityRole="radiogroup" accessibilityLabel={label}>
         {options.map((option) => {
           const selected = option.value === value;
           return (
             <Pressable
               key={option.value}
               accessibilityRole="radio"
-              accessibilityState={{ selected }}
+              accessibilityLabel={option.label}
+              accessibilityState={{ checked: selected }}
+              aria-checked={selected}
               onPress={() => onChange(option.value)}
               style={({ pressed }) => [styles.chip, selected && styles.selected, pressed && styles.pressed]}>
               <AppText tone={selected ? 'surface' : 'ink'} variant="label">{option.label}</AppText>
@@ -39,7 +41,7 @@ export function OptionChips<T extends string>({
 const styles = StyleSheet.create({
   group: { gap: 8, marginBottom: 18 },
   row: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  chip: { minHeight: 44, borderRadius: theme.radius.pill, borderWidth: 1, borderColor: theme.colors.border, paddingHorizontal: 18, justifyContent: 'center', backgroundColor: theme.colors.surface },
+  chip: { minHeight: 48, borderRadius: theme.radius.pill, borderWidth: 1, borderColor: theme.colors.border, paddingHorizontal: 16, justifyContent: 'center', backgroundColor: theme.colors.surface },
   selected: { backgroundColor: theme.colors.forest, borderColor: theme.colors.forest },
   pressed: { opacity: 0.8 },
 });

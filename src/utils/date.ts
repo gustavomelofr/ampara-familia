@@ -13,7 +13,8 @@ export function fromIsoDate(value: string) {
 export function formatDate(value: string, options?: Intl.DateTimeFormatOptions) {
   return new Intl.DateTimeFormat('pt-BR', options ?? {
     day: 'numeric',
-    month: 'long',
+    month: 'short',
+    year: 'numeric',
   }).format(fromIsoDate(value));
 }
 
@@ -22,6 +23,7 @@ export function formatDateWithWeekday(value: string) {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
+    year: 'numeric',
   }).format(fromIsoDate(value));
 }
 

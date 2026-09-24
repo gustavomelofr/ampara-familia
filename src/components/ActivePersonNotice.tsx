@@ -15,7 +15,9 @@ export function ActivePersonNotice({ interactive = true }: { interactive?: boole
 
   useFocusEffect(useCallback(() => {
     let active = true;
-    void getCareProfile(db).then((next) => { if (active) setProfile(next); });
+    void getCareProfile(db).then((next) => { if (active) setProfile(next); }).catch(() => {
+      if (active) setProfile(null);
+    });
     return () => { active = false; };
   }, [db]));
 
@@ -30,17 +32,23 @@ export function ActivePersonNotice({ interactive = true }: { interactive?: boole
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Dados de ${profile.personName}. Trocar pessoa acompanhada.`}
+      accessibilityLabel={`Pessoa acompanhada: ${profile.personName}. Trocar pessoa.`}
+      accessibilityHint="Abre a lista de pessoas acompanhadas"
       onPress={() => router.push('/care-profile')}
+      hitSlop={4}
       style={({ pressed }) => [styles.wrap, pressed && styles.pressed]}>
-      <AppText tone="muted" variant="small">Para <AppText tone="ink" variant="label">{profile.personName}</AppText></AppText>
+      <View style={styles.copy}>
+        <AppText tone="muted" variant="small">PESSOA ACOMPANHADA</AppText>
+        <AppText tone="ink" variant="label" numberOfLines={1}>{profile.personName}</AppText>
+      </View>
       <AppText tone="forest" variant="label">Trocar</AppText>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { minHeight: 44, paddingHorizontal: 12, borderRadius: theme.radius.md, backgroundColor: theme.colors.forestSoft, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  wrap: { minHeight: 54, paddingHorizontal: 14, paddingVertical: 7, borderRadius: theme.radius.md, backgroundColor: theme.colors.forestSoft, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, gap: 12 },
+  copy: { flex: 1, gap: 1 },
   static: { justifyContent: 'flex-start' },
   pressed: { opacity: 0.76 },
 });

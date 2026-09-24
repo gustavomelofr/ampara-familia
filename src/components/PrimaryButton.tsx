@@ -8,25 +8,27 @@ type Props = PropsWithChildren<{
   title: string;
   onPress: () => void;
   secondary?: boolean;
+  danger?: boolean;
   disabled?: boolean;
   accessibilityHint?: string;
 }>;
 
-export function PrimaryButton({ title, onPress, secondary = false, disabled = false, accessibilityHint, children }: Props) {
+export function PrimaryButton({ title, onPress, secondary = false, danger = false, disabled = false, accessibilityHint, children }: Props) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityHint={accessibilityHint}
+      accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
-        secondary ? styles.secondary : styles.primary,
+        danger ? styles.danger : secondary ? styles.secondary : styles.primary,
         disabled && styles.disabled,
         pressed && !disabled && styles.pressed,
       ]}>
       {children ? <View style={styles.content}>{children}</View> : null}
-      <AppText tone={secondary ? 'forest' : 'surface'} variant="label">{title}</AppText>
+      <AppText tone={disabled ? 'muted' : secondary ? 'forest' : 'surface'} variant="label">{title}</AppText>
     </Pressable>
   );
 }
@@ -43,7 +45,8 @@ const styles = StyleSheet.create({
   },
   primary: { backgroundColor: theme.colors.forest },
   secondary: { backgroundColor: theme.colors.forestSoft, borderWidth: 1, borderColor: theme.colors.border },
-  disabled: { opacity: 0.5 },
+  danger: { backgroundColor: theme.colors.danger },
+  disabled: { backgroundColor: theme.colors.border, borderColor: theme.colors.border, opacity: 1 },
   pressed: { opacity: 0.78 },
   content: { alignItems: 'center', justifyContent: 'center' },
 });

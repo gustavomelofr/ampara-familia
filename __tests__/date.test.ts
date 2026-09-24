@@ -6,7 +6,7 @@ describe('date helpers', () => {
   it('formats dates from local calendar fields without shifting the day', () => {
     const localMorning = new Date(2026, 8, 23, 8, 15);
     expect(toLocalIsoDate(localMorning)).toBe('2026-09-23');
-    expect(formatDate('2026-09-23')).toBe('23 de setembro');
+    expect(formatDate('2026-09-23')).toBe('23 de set. de 2026');
   });
 
   it('rejects malformed and impossible calendar dates', () => {

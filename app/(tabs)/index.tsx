@@ -5,8 +5,10 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AppScreen } from '@/src/components/AppScreen';
 import { AppText } from '@/src/components/AppText';
+import { ActivePersonNotice } from '@/src/components/ActivePersonNotice';
 import { PageHeader } from '@/src/components/PageHeader';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
+import { ScreenMessage } from '@/src/components/ScreenMessage';
 import { SectionTitle } from '@/src/components/SectionTitle';
 import { getCareProfile, listEvents, listTasks } from '@/src/database/repository';
 import type { CareEvent, CareProfile, CareTask } from '@/src/database/models';
@@ -20,6 +22,7 @@ export default function TodayScreen() {
   const [event, setEvent] = useState<CareEvent | null>(null);
   const [tasks, setTasks] = useState<CareTask[]>([]);
   const [loadError, setLoadError] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     try {
@@ -34,6 +37,8 @@ export default function TodayScreen() {
       setLoadError(false);
     } catch {
       setLoadError(true);
+    } finally {
+      setLoading(false);
     }
   }, [db]);
 
@@ -43,37 +48,41 @@ export default function TodayScreen() {
   return (
     <AppScreen>
       <PageHeader
-        eyebrow="AMPARA FAMÍLIA · CUIDADO EM FAMÍLIA"
+        eyebrow="HOJE"
         title={`${getGreeting()}, ${firstName}.`}
         subtitle={new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date())}
       />
-      <Pressable accessibilityRole="button" onPress={() => router.push('/care-profile')} style={styles.personSwitcher}>
-        <AppText tone="muted" variant="small">Acompanhando: {profile?.personName ?? 'familiar'}</AppText>
-        <AppText tone="forest" variant="label">Trocar pessoa</AppText>
-      </Pressable>
+      <ActivePersonNotice />
 
-      <View style={styles.focusBlock}>
-        <View style={styles.focusHead}>
-          <AppText tone="surface" variant="label">PRÓXIMO COMPROMISSO</AppText>
-          <AppText tone="surface" variant="small">{profile?.relationship === 'mãe' ? 'Sua mãe' : profile?.relationship === 'pai' ? 'Seu pai' : 'Seu familiar'}</AppText>
+      {loadError ? <ScreenMessage tone="error" title="Hoje não foi atualizado" message="Seus registros continuam salvos neste aparelho." actionLabel="Tentar novamente" onAction={() => void load()} /> : (
+        <View style={styles.focusBlock}>
+          <View style={styles.focusHead}>
+            <AppText tone="surface" variant="label">PRÓXIMO COMPROMISSO</AppText>
+            <AppText tone="surface" variant="small">{profile?.relationship === 'mãe' ? 'Sua mãe' : profile?.relationship === 'pai' ? 'Seu pai' : 'Seu familiar'}</AppText>
+          </View>
+          {loading ? (
+            <>
+              <AppText tone="surface" variant="title" style={styles.eventTitle}>Carregando agenda…</AppText>
+              <AppText tone="surface" style={styles.eventTime}>Buscando os próximos registros neste aparelho.</AppText>
+            </>
+          ) : event ? (
+            <>
+              <AppText accessibilityRole="header" tone="surface" variant="title" style={styles.eventTitle}>{event.title}</AppText>
+              <AppText tone="surface" style={styles.eventTime}>{formatDateWithWeekday(event.date)}{event.time ? ` · ${event.time}` : ''}</AppText>
+              {event.location ? <AppText tone="surface" variant="small">{event.location}</AppText> : null}
+            </>
+          ) : (
+            <>
+              <AppText accessibilityRole="header" tone="surface" variant="title" style={styles.eventTitle}>Ainda não há nada na agenda.</AppText>
+              <AppText tone="surface" style={styles.eventTime}>Quando registrar um compromisso, ele aparece aqui.</AppText>
+            </>
+          )}
+          {!loading ? <Pressable accessibilityRole="button" accessibilityHint={event ? 'Abre o compromisso para editar' : 'Abre a agenda'} onPress={() => event ? router.push({ pathname: '/event/form', params: { id: String(event.id) } }) : router.push('/agenda')} style={({ pressed }) => [styles.focusLink, pressed && styles.pressed]}>
+            <AppText tone="surface" variant="label">{event ? 'Revisar compromisso' : 'Ver agenda'}</AppText>
+            <AppText tone="surface" variant="label">›</AppText>
+          </Pressable> : null}
         </View>
-        {event ? (
-          <>
-            <AppText accessibilityRole="header" tone="surface" variant="title" style={styles.eventTitle}>{event.title}</AppText>
-            <AppText tone="surface" style={styles.eventTime}>{formatDateWithWeekday(event.date)}{event.time ? ` · ${event.time}` : ''}</AppText>
-            {event.location ? <AppText tone="surface" variant="small">{event.location}</AppText> : null}
-          </>
-        ) : (
-          <>
-            <AppText accessibilityRole="header" tone="surface" variant="title" style={styles.eventTitle}>Ainda não há nada na agenda.</AppText>
-            <AppText tone="surface" style={styles.eventTime}>Quando registrar um compromisso, ele aparece aqui.</AppText>
-          </>
-        )}
-        <Pressable accessibilityRole="button" onPress={() => router.push('/agenda')} style={({ pressed }) => [styles.focusLink, pressed && styles.pressed]}>
-          <AppText tone="surface" variant="label">Ver agenda</AppText>
-          <AppText tone="surface" variant="label">›</AppText>
-        </Pressable>
-      </View>
+      )}
 
       <View style={styles.actions}>
         <PrimaryButton title="Adicionar compromisso" onPress={() => router.push('/event/form')} />
@@ -85,10 +94,10 @@ export default function TodayScreen() {
           <AppText tone="forest" variant="label">Ver tudo</AppText>
         </Pressable>
       } />
-      {tasks.length > 0 ? (
+      {loading ? <ScreenMessage title="Carregando tarefas" message="Buscando os próximos passos." /> : tasks.length > 0 ? (
         <View style={styles.taskList}>
           {tasks.map((task, index) => (
-            <Pressable key={task.id} accessibilityRole="button" onPress={() => router.push('/tasks')} style={[styles.taskLine, index > 0 && styles.divider]}>
+              <Pressable key={task.id} accessibilityRole="button" accessibilityLabel={`Editar tarefa: ${task.title}`} onPress={() => router.push({ pathname: '/task/form', params: { id: String(task.id) } })} style={[styles.taskLine, index > 0 && styles.divider]}>
               <View style={styles.taskDot} />
               <View style={styles.taskCopy}>
                 <AppText variant="label">{task.title}</AppText>
@@ -98,35 +107,34 @@ export default function TodayScreen() {
             </Pressable>
           ))}
         </View>
-      ) : (
-        <View style={styles.emptyTasks}>
-          <AppText variant="label">Sem tarefas pendentes</AppText>
-          <AppText tone="muted" variant="small">Você pode anotar um próximo passo quando precisar.</AppText>
-        </View>
-      )}
+      ) : !loadError ? (
+        <ScreenMessage
+          title="Sem tarefas pendentes"
+          message="Uma lista curta também é uma forma de cuidar."
+          actionLabel="Criar tarefa"
+          onAction={() => router.push('/task/form')}
+        />
+      ) : null}
 
       <View style={styles.bottomNote}>
         <AppText tone="muted" variant="small">Seus registros ficam neste aparelho. Os lembretes ajudam a organizar a rotina, mas não substituem orientação profissional.</AppText>
       </View>
-      {loadError ? <AppText tone="danger" variant="small" accessibilityRole="alert">Não foi possível atualizar os dados. Tente novamente ao abrir a tela.</AppText> : null}
     </AppScreen>
   );
 }
 
 const styles = StyleSheet.create({
   focusBlock: { backgroundColor: theme.colors.forest, borderRadius: 22, padding: 22, marginTop: 2 },
-  personSwitcher: { minHeight: 44, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: -14, marginBottom: 14 },
   focusHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
   eventTitle: { marginTop: 22, marginBottom: 8 },
   eventTime: { marginBottom: 4 },
   focusLink: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: 'rgba(255,252,246,0.28)', marginTop: 18, paddingTop: 12 },
   actions: { gap: 10, marginTop: 16 },
   taskList: { borderTopWidth: 1, borderTopColor: theme.colors.border },
-  taskLine: { flexDirection: 'row', alignItems: 'center', minHeight: 68, gap: 12 },
+  taskLine: { flexDirection: 'row', alignItems: 'center', minHeight: 72, gap: 12 },
   divider: { borderTopWidth: 1, borderTopColor: theme.colors.border },
   taskDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: theme.colors.clay },
   taskCopy: { flex: 1, gap: 3 },
-  emptyTasks: { paddingVertical: 14, gap: 4, borderTopWidth: 1, borderTopColor: theme.colors.border },
   bottomNote: { marginTop: 32, paddingTop: 16, borderTopWidth: 1, borderTopColor: theme.colors.border },
   pressed: { opacity: 0.75 },
 });

@@ -8,7 +8,9 @@ import { AppText } from '@/src/components/AppText';
 import { ActivePersonNotice } from '@/src/components/ActivePersonNotice';
 import { DateField } from '@/src/components/DateField';
 import { Field } from '@/src/components/Field';
+import { PageHeader } from '@/src/components/PageHeader';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
+import { ScreenMessage } from '@/src/components/ScreenMessage';
 import { createTask, listTasks, RepositoryError, updateTask } from '@/src/database/repository';
 import { toLocalIsoDate } from '@/src/utils/date';
 
@@ -23,18 +25,34 @@ export default function TaskFormScreen() {
   const [notes, setNotes] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [loadError, setLoadError] = useState('');
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const [loading, setLoading] = useState(Boolean(taskId));
 
   useEffect(() => {
-    if (!taskId) return;
+    if (!taskId) {
+      setLoading(false);
+      return;
+    }
+    let active = true;
+    setLoading(true);
+    setLoadError('');
     void listTasks(db).then((tasks) => {
+      if (!active) return;
       const task = tasks.find((item) => item.id === taskId);
-      if (!task) return;
+      if (!task) {
+        setLoadError('Esta tarefa não está disponível neste perfil.');
+        return;
+      }
       setTitle(task.title);
       setDueDate(task.dueDate ?? '');
       setAssignee(task.assignee ?? '');
       setNotes(task.notes ?? '');
-    });
-  }, [db, taskId]);
+    }).catch(() => {
+      if (active) setLoadError('Não foi possível abrir a tarefa. Tente novamente.');
+    }).finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [db, taskId, loadAttempt]);
 
   const save = async () => {
     setSaving(true);
@@ -51,10 +69,26 @@ export default function TaskFormScreen() {
     }
   };
 
+  if (loading) {
+    return (
+      <AppScreen bottomInset={24}>
+        <PageHeader eyebrow="TAREFAS" title="Abrindo tarefa." subtitle="Carregando os detalhes salvos neste aparelho." onBack={() => router.back()} />
+      </AppScreen>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <AppScreen bottomInset={24}>
+        <PageHeader eyebrow="TAREFAS" title="Tarefa indisponível." onBack={() => router.back()} />
+        <ScreenMessage tone="error" title="Não foi possível abrir a tarefa" message={loadError} actionLabel="Tentar novamente" onAction={() => setLoadAttempt((attempt) => attempt + 1)} />
+      </AppScreen>
+    );
+  }
+
   return (
     <AppScreen bottomInset={24}>
-      <AppText accessibilityRole="header" variant="display" style={styles.title}>{taskId ? 'Revise a tarefa.' : 'Qual é o próximo passo?'}</AppText>
-      <AppText tone="muted" style={styles.subtitle}>Deixe claro o que precisa ser feito, sem tentar resolver tudo agora.</AppText>
+      <PageHeader eyebrow="TAREFAS" title={taskId ? 'Revise a tarefa.' : 'Qual é o próximo passo?'} subtitle="Deixe claro o que precisa ser feito, sem tentar resolver tudo agora." onBack={() => router.back()} />
       <ActivePersonNotice interactive={false} />
       <Field label="Tarefa" value={title} onChangeText={setTitle} placeholder="Ex.: buscar o resultado do exame" autoCapitalize="sentences" />
       <DateField label="Data para lembrar" value={dueDate} onChange={setDueDate} optional />
@@ -67,7 +101,5 @@ export default function TaskFormScreen() {
 }
 
 const styles = StyleSheet.create({
-  title: { marginTop: 6 },
-  subtitle: { marginTop: 8, marginBottom: 24 },
   error: { marginBottom: 14 },
 });
