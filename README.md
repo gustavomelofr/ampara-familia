@@ -57,4 +57,6 @@ Configure estes secrets em **Settings → Secrets and variables → Actions** no
 
 Os arquivos de assinatura e as chaves privadas não devem ser versionados nem enviados pelo chat. O `.p12` e o perfil devem ser criados/baixados no Apple Developer Portal e armazenados somente como secrets do repositório. A chave de equipe do App Store Connect precisa ter acesso ao app e papel **App Manager** para upload e metadados do TestFlight.
 
+O App ID tem a capability **Push Notifications** habilitada porque o plugin `expo-notifications` inclui a entitlement APNs no projeto nativo gerado. O protótipo usa notificações locais agendadas; não registra tokens nem envia notificações remotas.
+
 Para publicar um build: abra **Actions → Build and upload iOS to TestFlight → Run workflow**, informe uma mensagem e marque a confirmação. O workflow só faz upload para processamento no TestFlight; a distribuição a grupos de testers e a publicação pública continuam sendo controladas no App Store Connect.
