@@ -1,5 +1,4 @@
 import { useRouter } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import * as Notifications from 'expo-notifications';
@@ -11,10 +10,11 @@ import { PageHeader } from '@/src/components/PageHeader';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { ScreenMessage } from '@/src/components/ScreenMessage';
 import { clearAllCareData, listAllEventNotificationIds } from '@/src/database/repository';
+import { useAppDatabase } from '@/src/database/DatabaseProvider';
 import { theme } from '@/src/theme';
 
 export default function PrivacyScreen() {
-  const db = useSQLiteContext();
+  const db = useAppDatabase();
   const router = useRouter();
   const [error, setError] = useState('');
   const [deleting, setDeleting] = useState(false);
@@ -49,11 +49,12 @@ export default function PrivacyScreen() {
       </View>
       <View style={styles.section}>
         <AppText variant="label">Limites desta versão</AppText>
-        <AppText tone="muted">Ainda não há arquivo de backup ou restauração no app. O backup automático do aparelho depende das configurações do sistema. Para informações sensíveis, mantenha também uma cópia segura fora do celular.</AppText>
+        <AppText tone="muted">Você pode criar e restaurar um arquivo criptografado com uma senha escolhida por você. No Android, os dados do app não entram no backup automático do sistema; no iPhone, a chave do banco é vinculada à proteção do aparelho. Confirme sempre que o arquivo exportado foi salvo fora deste celular.</AppText>
+        <PrimaryButton title="Criar ou restaurar backup" secondary onPress={() => router.push('/backup')} />
       </View>
       <View style={styles.section}>
         <AppText variant="label">Proteja o aparelho</AppText>
-        <AppText tone="muted">Use o bloqueio de tela do telefone e evite registrar informações além do necessário. Esta versão não tem senha própria para abrir o Ampara.</AppText>
+        <AppText tone="muted">O Ampara pede Face ID, Touch ID ou código do aparelho ao abrir e ao voltar ao app. Os registros locais usam SQLCipher, com a chave no armazenamento seguro do sistema. O app também bloqueia capturas de tela e oculta a prévia nas telas recentes quando o sistema permite. Mantenha o bloqueio de tela ativo.</AppText>
       </View>
       {error ? <ScreenMessage tone="error" title="Os dados não foram apagados" message={error} /> : null}
       {confirmingDelete ? (

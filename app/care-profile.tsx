@@ -1,5 +1,4 @@
 import { useRouter } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -17,6 +16,7 @@ import {
   saveCareProfile,
   setActiveCareProfile,
 } from '@/src/database/repository';
+import { useAppDatabase } from '@/src/database/DatabaseProvider';
 import type { CareProfile, Relationship } from '@/src/database/models';
 import { theme } from '@/src/theme';
 
@@ -24,7 +24,7 @@ type Mode = 'list' | 'edit' | 'add';
 const relationshipLabels: Record<Relationship, string> = { mãe: 'Mãe', pai: 'Pai', outro: 'Outro familiar' };
 
 export default function CareProfileScreen() {
-  const db = useSQLiteContext();
+  const db = useAppDatabase();
   const router = useRouter();
   const [profiles, setProfiles] = useState<CareProfile[]>([]);
   const [activeId, setActiveId] = useState<number | null>(null);
@@ -135,7 +135,7 @@ export default function CareProfileScreen() {
       {!loading && !error && profiles.length < 2 ? (
         <PrimaryButton title="Adicionar outra pessoa" secondary onPress={startAdd} />
       ) : !loading && !error ? (
-        <AppText tone="muted" variant="small" style={styles.limit}>O protótipo organiza até duas pessoas acompanhadas. Esse limite pode ser revisto antes da primeira versão pública.</AppText>
+        <AppText tone="muted" variant="small" style={styles.limit}>Nesta versão, você pode acompanhar até duas pessoas neste aparelho.</AppText>
       ) : null}
       {!loading && !error ? <View style={styles.note}>
         <AppText tone="muted" variant="small">Ao trocar de perfil, a agenda e as tarefas passam a mostrar somente os registros daquela pessoa.</AppText>

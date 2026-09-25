@@ -1,5 +1,4 @@
 import { useRouter } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -10,10 +9,11 @@ import { Field } from '@/src/components/Field';
 import { PageHeader } from '@/src/components/PageHeader';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { createMedication, RepositoryError } from '@/src/database/repository';
+import { useAppDatabase } from '@/src/database/DatabaseProvider';
 import { theme } from '@/src/theme';
 
 export default function NewMedicationScreen() {
-  const db = useSQLiteContext();
+  const db = useAppDatabase();
   const router = useRouter();
   const [name, setName] = useState('');
   const [schedule, setSchedule] = useState('');

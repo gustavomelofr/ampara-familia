@@ -1,15 +1,15 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/src/components/AppText';
+import { useAppDatabase } from '@/src/database/DatabaseProvider';
 import { getCareProfile } from '@/src/database/repository';
 import type { CareProfile } from '@/src/database/models';
 import { theme } from '@/src/theme';
 
 export function ActivePersonNotice({ interactive = true }: { interactive?: boolean }) {
-  const db = useSQLiteContext();
+  const db = useAppDatabase();
   const router = useRouter();
   const [profile, setProfile] = useState<CareProfile | null>(null);
 

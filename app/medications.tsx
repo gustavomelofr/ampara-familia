@@ -1,5 +1,4 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -11,11 +10,12 @@ import { PageHeader } from '@/src/components/PageHeader';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { ScreenMessage } from '@/src/components/ScreenMessage';
 import { deleteMedication, listMedications } from '@/src/database/repository';
+import { useAppDatabase } from '@/src/database/DatabaseProvider';
 import type { MedicationNote } from '@/src/database/models';
 import { theme } from '@/src/theme';
 
 export default function MedicationsScreen() {
-  const db = useSQLiteContext();
+  const db = useAppDatabase();
   const router = useRouter();
   const [medications, setMedications] = useState<MedicationNote[]>([]);
   const [error, setError] = useState('');

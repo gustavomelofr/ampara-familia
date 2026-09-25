@@ -1,5 +1,4 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -11,6 +10,7 @@ import { PageHeader } from '@/src/components/PageHeader';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { ScreenMessage } from '@/src/components/ScreenMessage';
 import { deleteExpense, listExpenses } from '@/src/database/repository';
+import { useAppDatabase } from '@/src/database/DatabaseProvider';
 import type { Expense } from '@/src/database/models';
 import { formatDate } from '@/src/utils/date';
 import { theme } from '@/src/theme';
@@ -18,7 +18,7 @@ import { theme } from '@/src/theme';
 const currency = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
 export default function ExpensesScreen() {
-  const db = useSQLiteContext();
+  const db = useAppDatabase();
   const router = useRouter();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);

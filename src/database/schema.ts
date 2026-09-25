@@ -1,4 +1,8 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
+import { Platform } from 'react-native';
+
+import { retryPendingNotificationCleanup } from '@/src/database/notificationCleanup';
+import { initializeEncryptedDatabase } from '@/src/database/encryption';
 
 export const DATABASE_NAME = 'ampara.db';
 const DATABASE_VERSION = 2;
@@ -67,7 +71,22 @@ CREATE TABLE IF NOT EXISTS medication_notes (
 );
 `;
 
-export async function migrateDatabase(db: SQLiteDatabase) {
+export async function migrateDatabase(db: SQLiteDatabase): Promise<SQLiteDatabase> {
+  const originallyOpenedDatabase = db;
+  db = await initializeEncryptedDatabase(db);
+  try {
+    db = await migrateDatabaseSchema(db);
+    if (Platform.OS === 'ios' || Platform.OS === 'android') {
+      await retryPendingNotificationCleanup(db);
+    }
+    return db;
+  } catch (error) {
+    if (db !== originallyOpenedDatabase) await db.closeAsync().catch(() => undefined);
+    throw error;
+  }
+}
+
+export async function migrateDatabaseSchema(db: SQLiteDatabase): Promise<SQLiteDatabase> {
   await db.execAsync('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
   const row = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
   let currentVersion = row?.user_version ?? 0;
@@ -115,4 +134,5 @@ export async function migrateDatabase(db: SQLiteDatabase) {
       `);
     });
   }
+  return db;
 }

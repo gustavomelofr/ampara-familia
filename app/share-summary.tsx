@@ -1,5 +1,4 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useState } from 'react';
 import { Share, StyleSheet, Switch, View } from 'react-native';
 
@@ -10,6 +9,7 @@ import { PageHeader } from '@/src/components/PageHeader';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { ScreenMessage } from '@/src/components/ScreenMessage';
 import { getCareProfile, listDocuments, listEvents, listExpenses, listMedications, listTasks } from '@/src/database/repository';
+import { useAppDatabase } from '@/src/database/DatabaseProvider';
 import type { CareDocument, CareEvent, CareProfile, CareTask, Expense, MedicationNote } from '@/src/database/models';
 import { formatDate, toLocalIsoDate } from '@/src/utils/date';
 import { theme } from '@/src/theme';
@@ -32,7 +32,7 @@ const limits: Record<SummaryKey, string> = {
 const currency = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
 export default function ShareSummaryScreen() {
-  const db = useSQLiteContext();
+  const db = useAppDatabase();
   const router = useRouter();
   const [profile, setProfile] = useState<CareProfile | null>(null);
   const [events, setEvents] = useState<CareEvent[]>([]);

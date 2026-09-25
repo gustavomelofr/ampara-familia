@@ -1,5 +1,4 @@
 import { useRouter } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
 import { useState } from 'react';
 import { StyleSheet } from 'react-native';
 
@@ -11,9 +10,10 @@ import { Field } from '@/src/components/Field';
 import { PageHeader } from '@/src/components/PageHeader';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { createDocument, RepositoryError } from '@/src/database/repository';
+import { useAppDatabase } from '@/src/database/DatabaseProvider';
 
 export default function NewDocumentScreen() {
-  const db = useSQLiteContext();
+  const db = useAppDatabase();
   const router = useRouter();
   const [title, setTitle] = useState('');
   const [location, setLocation] = useState('');

@@ -1,5 +1,4 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
 import * as Notifications from 'expo-notifications';
 import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -14,6 +13,7 @@ import { PageHeader } from '@/src/components/PageHeader';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { ScreenMessage } from '@/src/components/ScreenMessage';
 import { createEvent, getEvent, RepositoryError, setEventNotification, updateEvent } from '@/src/database/repository';
+import { useAppDatabase } from '@/src/database/DatabaseProvider';
 import type { EventKind } from '@/src/database/models';
 import { toLocalIsoDate, fromIsoDate } from '@/src/utils/date';
 import { theme } from '@/src/theme';
@@ -26,7 +26,7 @@ const eventOptions: { value: EventKind; label: string }[] = [
 ];
 
 export default function EventFormScreen() {
-  const db = useSQLiteContext();
+  const db = useAppDatabase();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const eventId = id ? Number(id) : null;

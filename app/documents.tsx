@@ -1,5 +1,4 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -11,12 +10,13 @@ import { PageHeader } from '@/src/components/PageHeader';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { ScreenMessage } from '@/src/components/ScreenMessage';
 import { deleteDocument, listDocuments, setDocumentCompleted } from '@/src/database/repository';
+import { useAppDatabase } from '@/src/database/DatabaseProvider';
 import type { CareDocument } from '@/src/database/models';
 import { formatDate, toLocalIsoDate } from '@/src/utils/date';
 import { theme } from '@/src/theme';
 
 export default function DocumentsScreen() {
-  const db = useSQLiteContext();
+  const db = useAppDatabase();
   const router = useRouter();
   const [documents, setDocuments] = useState<CareDocument[]>([]);
   const [error, setError] = useState('');

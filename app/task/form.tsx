@@ -1,5 +1,4 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
 import { useEffect, useState } from 'react';
 import { StyleSheet } from 'react-native';
 
@@ -12,10 +11,11 @@ import { PageHeader } from '@/src/components/PageHeader';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { ScreenMessage } from '@/src/components/ScreenMessage';
 import { createTask, listTasks, RepositoryError, updateTask } from '@/src/database/repository';
+import { useAppDatabase } from '@/src/database/DatabaseProvider';
 import { toLocalIsoDate } from '@/src/utils/date';
 
 export default function TaskFormScreen() {
-  const db = useSQLiteContext();
+  const db = useAppDatabase();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const taskId = id ? Number(id) : null;

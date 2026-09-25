@@ -1,5 +1,4 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import * as Notifications from 'expo-notifications';
@@ -12,6 +11,7 @@ import { PageHeader } from '@/src/components/PageHeader';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { ScreenMessage } from '@/src/components/ScreenMessage';
 import { listEvents, deleteEvent } from '@/src/database/repository';
+import { useAppDatabase } from '@/src/database/DatabaseProvider';
 import type { CareEvent, EventKind } from '@/src/database/models';
 import { formatDateWithWeekday, toLocalIsoDate } from '@/src/utils/date';
 import { theme } from '@/src/theme';
@@ -24,7 +24,7 @@ const kindLabels: Record<EventKind, string> = {
 };
 
 export default function AgendaScreen() {
-  const db = useSQLiteContext();
+  const db = useAppDatabase();
   const router = useRouter();
   const [events, setEvents] = useState<CareEvent[]>([]);
   const [showPast, setShowPast] = useState(false);

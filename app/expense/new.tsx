@@ -1,5 +1,4 @@
 import { useRouter } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
 import { useState } from 'react';
 import { StyleSheet } from 'react-native';
 
@@ -12,6 +11,7 @@ import { OptionChips } from '@/src/components/OptionChips';
 import { PageHeader } from '@/src/components/PageHeader';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { createExpense, RepositoryError } from '@/src/database/repository';
+import { useAppDatabase } from '@/src/database/DatabaseProvider';
 import { parseBrlAmountToCents } from '@/src/utils/money';
 import { toLocalIsoDate } from '@/src/utils/date';
 
@@ -19,7 +19,7 @@ const categories = ['Farmácia', 'Transporte', 'Consulta', 'Casa', 'Outro'] as c
 type Category = (typeof categories)[number];
 
 export default function NewExpenseScreen() {
-  const db = useSQLiteContext();
+  const db = useAppDatabase();
   const router = useRouter();
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');

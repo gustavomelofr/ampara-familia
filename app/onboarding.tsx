@@ -1,5 +1,4 @@
 import { useRouter } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -10,11 +9,12 @@ import { OptionChips } from '@/src/components/OptionChips';
 import { PageHeader } from '@/src/components/PageHeader';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { createCareProfile } from '@/src/database/repository';
+import { useAppDatabase } from '@/src/database/DatabaseProvider';
 import type { Relationship } from '@/src/database/models';
 import { theme } from '@/src/theme';
 
 export default function OnboardingScreen() {
-  const db = useSQLiteContext();
+  const db = useAppDatabase();
   const router = useRouter();
   const [personName, setPersonName] = useState('');
   const [relationship, setRelationship] = useState<Relationship>('mãe');
@@ -66,6 +66,7 @@ export default function OnboardingScreen() {
       </View>
       {error ? <AppText tone="danger" accessibilityRole="alert" style={styles.error}>{error}</AppText> : null}
       <PrimaryButton title={saving ? 'Salvando…' : 'Continuar'} onPress={() => void save()} disabled={saving || personName.trim().length < 2} />
+      <PrimaryButton title="Restaurar de um backup" secondary onPress={() => router.push('/backup')} disabled={saving} />
       <AppText tone="muted" variant="small" style={styles.disclaimer}>O Ampara ajuda a organizar informações. Não substitui profissionais de saúde nem serviços de emergência.</AppText>
     </AppScreen>
   );

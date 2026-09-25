@@ -1,5 +1,4 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -11,12 +10,13 @@ import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { ScreenMessage } from '@/src/components/ScreenMessage';
 import { SectionTitle } from '@/src/components/SectionTitle';
 import { getCareProfile, listEvents, listTasks } from '@/src/database/repository';
+import { useAppDatabase } from '@/src/database/DatabaseProvider';
 import type { CareEvent, CareProfile, CareTask } from '@/src/database/models';
 import { formatDate, formatDateWithWeekday, getGreeting, toLocalIsoDate } from '@/src/utils/date';
 import { theme } from '@/src/theme';
 
 export default function TodayScreen() {
-  const db = useSQLiteContext();
+  const db = useAppDatabase();
   const router = useRouter();
   const [profile, setProfile] = useState<CareProfile | null>(null);
   const [event, setEvent] = useState<CareEvent | null>(null);
