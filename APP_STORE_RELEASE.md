@@ -1,12 +1,12 @@
 # Ampara Família — simplificação e App Store
 
-**Estado:** em preparação; nenhuma build-ponte foi enviada após a decisão de simplificar. A build 8.1 contém SQLCipher e dados cifrados. Não enviar uma build SQLite-only diretamente a aparelhos que ainda tenham esses dados.
+**Estado:** build-ponte **1.0 (9.1)** enviada ao TestFlight pelo workflow `36436758125`; confirmar processamento e instalar em todos os aparelhos controlados antes da versão final. A build anterior 8.1 contém SQLCipher e dados cifrados. Não enviar uma build SQLite-only diretamente a aparelhos que ainda tenham esses dados.
 
 ## Plano em duas builds
 
 ### Build-ponte TestFlight
 
-- [ ] Remover Face ID/código próprio, bloqueio de captura, telas de backup/restauração e respetivos textos/dependências.
+- [x] Remover Face ID/código próprio, bloqueio de captura, telas de backup/restauração e respetivos textos/dependências no código-ponte.
 - [ ] Manter SQLCipher invisível apenas para abrir 8.1 e migrar, no mesmo aparelho, a base completa para SQLite local sem SQLCipher.
 - [ ] Em dispositivos com base 7.1 em SQLite simples, manter os dados e atualizar o esquema normalmente.
 - [ ] Não substituir a base até comparar esquema, IDs, linhas, pessoa ativa, `sqlite_sequence` e integridade; manter a origem cifrada até reabrir e conferir a base simples.
