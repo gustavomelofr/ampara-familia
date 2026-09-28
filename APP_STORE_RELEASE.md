@@ -1,8 +1,8 @@
 # Ampara Família — simplificação e App Store
 
-**Estado:** Gustavo confirmou que a build-ponte **1.0 (10.1)** foi instalada sobre a versão existente e que os registros foram conferidos nos aparelhos controlados. A correção da splash está no commit `b984d32`. O código final SQLite-only agora está implementado: SQLCipher está desativado no config nativo iOS/Android; a inicialização valida o arquivo SQLite e falha sem sobrescrever arquivos não legíveis. Próximo passo: gerar a build final e validá-la no TestFlight antes de App Review.
+**Estado:** Gustavo confirmou que a ponte **1.0 (10.1)** migrou os aparelhos e preservou os registros. O código final SQLite-only está no commit `9d1b983`; SQLCipher está desativado no config nativo iOS/Android, o banco é validado antes de qualquer migração e as chaves SQLCipher antigas são removidas somente após validação. A build final **1.0 (11.1)** foi enviada ao TestFlight, está pronta para teste e foi anexada ao rascunho da versão na App Store; ainda não há instalações registradas da 11.1.
 
-**App Store Connect:** subtítulo, descrição, palavras-chave, notas e contato da revisão salvos; “Início de sessão obrigatório” desmarcado. A declaração “Dados não coletados” foi publicada e a URL pública da política está cadastrada. Categoria **Estilo de vida**, classificação **+4**, direitos de conteúdo sem terceiros, preço gratuito e disponibilidade somente no Brasil. Copyright continua vazio; versão 1.0 não tem build final anexada. Nada foi submetido à App Review.
+**App Store Connect:** subtítulo, descrição, palavras-chave, notas, Copyright e contato da revisão salvos; “Início de sessão obrigatório” desmarcado. A declaração “Dados não coletados” foi publicada e as URLs públicas de política e suporte estão cadastradas. Categoria **Estilo de vida**, classificação **+4**, direitos de conteúdo sem terceiros, preço gratuito e disponibilidade somente no Brasil. A build 11.1 está anexada ao rascunho, mas faltam capturas da build final. Nada foi submetido à App Review.
 
 ## Plano em duas builds
 
@@ -20,7 +20,8 @@
 
 - [x] Após confirmar a migração em todos os aparelhos, remover o plugin/biblioteca SQLCipher e eliminar as chaves SQLCipher antigas do SecureStore após validar o SQLite. Arquivos inválidos ou ainda cifrados falham sem sobrescrita nem criação silenciosa de base vazia.
 - [x] Não oferecer backup/restauração nem sincronização; avisar que limpar dados ou desinstalar pode apagar os registros.
-- [ ] Gerar e instalar a build final SQLite-only pelo TestFlight como atualização, sem desinstalar, e conferir abertura e dados em dispositivo real.
+- [x] Gerar e enviar ao TestFlight a build final SQLite-only **1.0 (11.1)**.
+- [ ] Instalar 11.1 como atualização, sem desinstalar, e confirmar abertura e dados em dispositivo real.
 - [ ] Confirmar que o alerta `Expo Head` continua ausente na build final.
 
 ## Requisitos da App Store (continuam obrigatórios)
@@ -32,9 +33,10 @@
 - [x] Definir categoria primária **Estilo de vida**, classificação etária **+4** e declarar que o app não contém conteúdo de terceiros.
 - [x] Definir preço gratuito (R$ 0,00 como preço de referência; tabela atualizada para 175 países/regiões) e disponibilidade somente no Brasil.
 - [ ] Capturar telas da **build final** com informações inteiramente fictícias e dimensões aceitas no App Store Connect.
-- [ ] Completar Copyright na ficha 1.0 (o App Store Connect não manteve o valor digitado após salvar) e revisar descrição, subtítulo, palavras-chave e notas.
-- [x] Publicar a declaração App Privacy “Dados não coletados”, conforme o funcionamento sem envio automático de dados. Revisar também o questionário de exportação/criptografia conforme a build final.
-- [ ] Selecionar apenas a build final, configurar gratuita no Brasil e liberação manual após aprovação. Enviar à App Review somente depois dos itens acima.
+- [x] Salvar Copyright e revisar descrição, subtítulo, palavras-chave e notas de revisão.
+- [x] Publicar a declaração App Privacy “Dados não coletados” e responder à conformidade de exportação para a build final 11.1 (sem algoritmos de criptografia implementados pelo app).
+- [x] Anexar somente a build final 11.1 ao rascunho, com preço gratuito no Brasil e lançamento manual após aprovação.
+- [ ] Submeter à App Review somente depois de instalar/testar a 11.1 e carregar capturas da build final.
 
 ## Texto de loja (rascunho)
 
