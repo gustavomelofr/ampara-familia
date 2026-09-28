@@ -2,6 +2,8 @@
 
 **Estado:** build-ponte **1.0 (9.1)** enviada ao TestFlight pelo workflow `36436758125`; confirmar processamento e instalar em todos os aparelhos controlados antes da versão final. A build anterior 8.1 contém SQLCipher e dados cifrados. Não enviar uma build SQLite-only diretamente a aparelhos que ainda tenham esses dados.
 
+**Rascunho no App Store Connect:** salvei o subtítulo, descrição, palavras-chave e notas de revisão simplificadas; desmarquei “Início de sessão obrigatório” e deixei selecionado “Não coletamos dados” como rascunho. Não publiquei essa declaração nem submeti a versão à App Review; revisar tudo contra a build final.
+
 ## Plano em duas builds
 
 ### Build-ponte TestFlight
@@ -23,6 +25,7 @@
 
 - [ ] Publicar a política de privacidade em URL HTTPS estável, preenchendo responsável, contato e data em `PRIVACY_POLICY_DRAFT.md`.
 - [ ] Fornecer URL pública de suporte e um e-mail de contato real.
+- [ ] Definir a categoria, classificação etária e direitos de conteúdo da listagem; a categoria e a classificação ainda não estão concluídas no App Store Connect.
 - [ ] Capturar telas da **build final** com informações inteiramente fictícias e dimensões aceitas no App Store Connect.
 - [ ] Completar descrição, subtítulo, palavras-chave, categoria, classificação etária, direitos, URLs e notas de revisão sem promessas clínicas.
 - [ ] Revisar App Privacy e responder ao questionário de exportação/criptografia de acordo com a build final. Não reutilizar as declarações antigas de SQLCipher/AES sem revisão.
