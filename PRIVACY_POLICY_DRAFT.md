@@ -12,19 +12,19 @@ Os lembretes são agendados localmente pelo sistema operacional. Eles são auxil
 
 ## Acesso e compartilhamento
 
-No iOS e Android, o acesso pela interface exige autenticação do aparelho (Face ID, Touch ID ou código de desbloqueio). O banco local usa SQLCipher e a chave aleatória fica no armazenamento seguro do sistema, protegida enquanto o aparelho está bloqueado. O app também bloqueia capturas de tela e aplica proteção às prévias de multitarefa compatíveis com o sistema operacional. Essas configurações ainda precisam ser validadas na build final, inclusive na recuperação e migração dos dados já existentes.
+O app não exige Face ID, Touch ID nem código próprio para abrir. O usuário deve manter o bloqueio de tela do aparelho ativo; o app não bloqueia capturas de tela nem garante ocultar a prévia nas telas recentes. Nesta versão simplificada, os registros ficam em SQLite local sem criptografia SQLCipher pelo Ampara. Uma versão-ponte mantém temporariamente suporte a SQLCipher apenas para migrar, no mesmo aparelho, os registros cifrados da versão 8.1 para SQLite.
 
 O usuário pode visualizar uma prévia e escolher as seções de um resumo antes de abrir a folha de compartilhamento do sistema. Nada é enviado pelo Ampara automaticamente. Ao escolher outro aplicativo ou serviço para compartilhar, o tratamento dos dados passa a depender do destino escolhido.
 
-## Exportação e restauração
+## Backup, restauração e perda do aparelho
 
-O usuário pode criar um arquivo de backup cifrado com AES-256-GCM, usando uma senha definida por ele. O app não armazena nem recupera essa senha. O arquivo é entregue à opção escolhida na folha de compartilhamento do sistema; o desenvolvedor não recebe uma cópia. O usuário deve confirmar que guardou o arquivo e a senha em locais seguros e distintos. Restaurar um arquivo substitui os registros atuais após confirmação; há também um fluxo separado de recuperação se o banco cifrado não puder ser aberto. Os lembretes do arquivo devem ser recriados manualmente. O arquivo e o banco local usam mecanismos de proteção distintos.
+Esta versão não oferece backup ou restauração próprios e não sincroniza registros entre aparelhos. Se desinstalar o app, limpar os dados do aparelho ou trocar de dispositivo, os registros podem ser perdidos. As atualizações devem ser instaladas no mesmo aparelho sem desinstalar a versão existente.
 
-Durante a migração de uma versão antiga, o banco original pode permanecer temporariamente como arquivo técnico de recuperação na pasta privada do app até que a nova versão cifrada seja reaberta e validada. Esse arquivo não usa a senha do backup nem é uma cópia pessoal escolhida pelo usuário. Cópias de arquivos do app mantidas em serviços de backup do dispositivo devem ser geridas pelo usuário.
+Durante a migração da versão 8.1, o banco SQLCipher original pode permanecer temporariamente como arquivo técnico de recuperação na pasta privada do app até a conferência do banco SQLite. Essa cópia não é um backup selecionável pelo usuário. Depois da migração, os novos registros são armazenados sem criptografia SQLCipher pelo Ampara.
 
 ## Exclusão e retenção
 
-Os registros permanecem no dispositivo até que o usuário os exclua pelo aplicativo, desinstale o app ou restaure outro backup. A seção **Dados e privacidade** oferece uma ação para apagar os perfis e registros locais. Cópias exportadas, compartilhadas ou mantidas por backups do sistema devem ser geridas separadamente nos respectivos destinos.
+Os registros permanecem no dispositivo até que o usuário os exclua pelo aplicativo, remova o app ou limpe os dados do sistema. A seção **Dados e privacidade** oferece uma ação para apagar os perfis e registros locais. Resumos compartilhados manualmente passam a ser tratados pelo aplicativo ou serviço escolhido como destino.
 
 ## Solicitações e atualizações
 

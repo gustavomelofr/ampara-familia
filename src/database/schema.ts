@@ -2,7 +2,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 import { Platform } from 'react-native';
 
 import { retryPendingNotificationCleanup } from '@/src/database/notificationCleanup';
-import { initializeEncryptedDatabase } from '@/src/database/encryption';
+import { initializePlaintextBridgeDatabase } from '@/src/database/encryption';
 
 export const DATABASE_NAME = 'ampara.db';
 const DATABASE_VERSION = 2;
@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS medication_notes (
 
 export async function migrateDatabase(db: SQLiteDatabase): Promise<SQLiteDatabase> {
   const originallyOpenedDatabase = db;
-  db = await initializeEncryptedDatabase(db);
+  db = await initializePlaintextBridgeDatabase(db);
   try {
     db = await migrateDatabaseSchema(db);
     if (Platform.OS === 'ios' || Platform.OS === 'android') {

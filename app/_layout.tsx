@@ -8,7 +8,6 @@ import 'react-native-reanimated';
 
 import { AppScreen } from '@/src/components/AppScreen';
 import { AppText } from '@/src/components/AppText';
-import { DeviceLock } from '@/src/components/DeviceLock';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { ScreenMessage } from '@/src/components/ScreenMessage';
 import { WebTitle } from '@/src/components/WebTitle';
@@ -36,7 +35,7 @@ export default function RootLayout() {
   return (
     <>
       <WebTitle />
-      <DeviceLock><DatabaseProvider><RootNavigator /></DatabaseProvider></DeviceLock>
+      <DatabaseProvider><RootNavigator /></DatabaseProvider>
     </>
   );
 }
@@ -102,7 +101,6 @@ function RootNavigator() {
           <Stack.Screen name="share-summary" options={{ presentation: 'modal' }} />
           <Stack.Screen name="expenses" />
           <Stack.Screen name="privacy" />
-          <Stack.Screen name="backup" />
           <Stack.Screen name="care-profile" />
           <Stack.Screen name="documents" />
           <Stack.Screen name="medications" />

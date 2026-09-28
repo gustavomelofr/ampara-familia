@@ -66,7 +66,6 @@ export default function OnboardingScreen() {
       </View>
       {error ? <AppText tone="danger" accessibilityRole="alert" style={styles.error}>{error}</AppText> : null}
       <PrimaryButton title={saving ? 'Salvando…' : 'Continuar'} onPress={() => void save()} disabled={saving || personName.trim().length < 2} />
-      <PrimaryButton title="Restaurar de um backup" secondary onPress={() => router.push('/backup')} disabled={saving} />
       <AppText tone="muted" variant="small" style={styles.disclaimer}>O Ampara ajuda a organizar informações. Não substitui profissionais de saúde nem serviços de emergência.</AppText>
     </AppScreen>
   );

@@ -46,14 +46,7 @@
       ["expo-sqlite", { "useSQLCipher": true }],
       "expo-notifications",
       "@react-native-community/datetimepicker",
-      "expo-sharing",
-      [
-        "expo-local-authentication",
-        {
-          "faceIDPermission": "Permitir que o Ampara Família use o Face ID para proteger seus registros familiares."
-        }
-      ],
-      "expo-secure-store"
+      ["expo-secure-store", { "faceIDPermission": false, "configureAndroidBackup": false }]
     ],
     "experiments": {
       "typedRoutes": true

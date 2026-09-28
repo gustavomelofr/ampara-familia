@@ -48,13 +48,8 @@ export default function PrivacyScreen() {
         <AppText tone="muted">Só acontece quando você escolhe as seções, revisa a prévia e abre as opções de compartilhamento do aparelho.</AppText>
       </View>
       <View style={styles.section}>
-        <AppText variant="label">Limites desta versão</AppText>
-        <AppText tone="muted">Você pode criar e restaurar um arquivo criptografado com uma senha escolhida por você. No Android, os dados do app não entram no backup automático do sistema; no iPhone, a chave do banco é vinculada à proteção do aparelho. Confirme sempre que o arquivo exportado foi salvo fora deste celular.</AppText>
-        <PrimaryButton title="Criar ou restaurar backup" secondary onPress={() => router.push('/backup')} />
-      </View>
-      <View style={styles.section}>
-        <AppText variant="label">Proteja o aparelho</AppText>
-        <AppText tone="muted">O Ampara pede Face ID, Touch ID ou código do aparelho ao abrir e ao voltar ao app. Os registros locais usam SQLCipher, com a chave no armazenamento seguro do sistema. O app também bloqueia capturas de tela e oculta a prévia nas telas recentes quando o sistema permite. Mantenha o bloqueio de tela ativo.</AppText>
+        <AppText variant="label">Armazenamento no aparelho</AppText>
+        <AppText tone="muted">O Ampara não cria conta, não sincroniza registros entre aparelhos e não oferece backup próprio. As informações permanecem neste aparelho. Se desinstalar o app, apagar os dados ou trocar de aparelho, elas podem ser perdidas. Compartilhar um resumo só acontece quando você escolhe as seções e abre as opções do aparelho.</AppText>
       </View>
       {error ? <ScreenMessage tone="error" title="Os dados não foram apagados" message={error} /> : null}
       {confirmingDelete ? (

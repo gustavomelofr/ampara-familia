@@ -22,13 +22,13 @@ O projeto usa Expo SDK 57, React Native, TypeScript, Expo Router e Expo SQLite. 
 - Prévia de resumo e compartilhamento manual por seção.
 - Apagar todos os dados a partir da tela de privacidade.
 
-Uma candidata a lançamento adiciona desbloqueio pela autenticação do aparelho, banco SQLCipher com chave no SecureStore e exportação/restauração de um arquivo cifrado com senha, acessíveis em **Dados e privacidade**. Esses fluxos ainda exigem verificação em iPhone real antes da publicação. No Android, a cópia automática do sistema está desativada porque não pode recuperar com segurança a chave protegida no Keystore; use o backup exportado.
+Uma versão-ponte simplifica a interface e migra, uma única vez, os bancos SQLCipher da build TestFlight 8.1 para SQLite local sem criptografia própria. O leitor SQLCipher permanece temporariamente apenas para essa migração; depois de confirmar todos os aparelhos atualizados, será removido numa build seguinte. Os registros não têm sincronização nem backup próprio: permanecem no aparelho e podem ser perdidos se o app/dados forem removidos ou se trocar de aparelho.
 
 ## Cuidados de produto
 
 O aplicativo organiza informações inseridas pela família. Não diagnostica, prescreve, calcula dose, confirma que um medicamento foi administrado, monitora sinais vitais nem substitui profissionais ou serviços de emergência. Notificações são auxiliares e podem não ser entregues pelo sistema operacional.
 
-Consultas e medicamentos podem conter dados pessoais sensíveis. Não inserir dados reais em capturas de tela, demonstrações ou testes compartilhados. A proteção do acesso não substitui a revisão de armazenamento seguro, exportação e recuperação de dados, política de privacidade, termos e avisos antes de uma distribuição pública. Consulte `APP_STORE_RELEASE.md` para os critérios de lançamento.
+Consultas e medicamentos podem conter dados pessoais sensíveis. Não inserir dados reais em capturas de tela, demonstrações ou testes compartilhados. A versão simplificada não bloqueia o app com Face ID/código nem oferece backup/restauração. Consulte `APP_STORE_RELEASE.md` antes de distribuir publicamente e revise as declarações de privacidade e armazenamento.
 
 ## Verificações
 

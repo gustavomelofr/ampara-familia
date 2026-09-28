@@ -1,18 +1,14 @@
-import { defaultDatabaseDirectory, openDatabaseAsync, type SQLiteDatabase } from 'expo-sqlite';
+import { openDatabaseAsync, type SQLiteDatabase } from 'expo-sqlite';
 import type { PropsWithChildren } from 'react';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 
 import { AppScreen } from '@/src/components/AppScreen';
-import { DatabaseRecoveryPanel } from '@/src/components/DatabaseRecoveryPanel';
 import { PageHeader } from '@/src/components/PageHeader';
 import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { ScreenMessage } from '@/src/components/ScreenMessage';
 import { DATABASE_NAME, migrateDatabase } from '@/src/database/schema';
 
 const DatabaseContext = createContext<SQLiteDatabase | null>(null);
-const RECOVERY_DATABASE_PATH = defaultDatabaseDirectory
-  ? `${defaultDatabaseDirectory}/${DATABASE_NAME}`
-  : DATABASE_NAME;
 
 export function useAppDatabase(): SQLiteDatabase {
   const database = useContext(DatabaseContext);
@@ -64,23 +60,19 @@ export function DatabaseProvider({ children }: PropsWithChildren) {
       <AppScreen>
         <PageHeader
           eyebrow="AMPARA FAMÍLIA"
-          title={error ? 'Não foi possível preparar o banco seguro.' : 'Preparando o armazenamento seguro.'}
+          title={error ? 'Não foi possível preparar o banco local.' : 'Preparando o banco local.'}
           subtitle={error
             ? 'O acesso aos registros está pausado. Mantenha o app instalado e não apague os dados deste aparelho.'
-            : 'A atualização prepara a criptografia no aparelho antes de abrir seus registros.'}
+            : 'A atualização preserva e organiza os registros neste aparelho.'}
         />
         {error ? (
           <>
-            <ScreenMessage tone="error" title="Não foi possível abrir o banco seguro" message={error} />
+            <ScreenMessage tone="error" title="Não foi possível abrir os registros" message={error} />
             <PrimaryButton title="Tentar novamente" onPress={() => setAttempt((value) => value + 1)} />
-            <ScreenMessage title="Mantenha este aparelho" message="Não desinstale o Ampara nem limpe os dados do app. A recuperação abaixo exige um backup válido e substituirá o banco que não abriu; confirme que o arquivo contém os registros que deseja manter." />
-            <DatabaseRecoveryPanel
-              databasePath={RECOVERY_DATABASE_PATH}
-              onRecovered={() => setAttempt((value) => value + 1)}
-            />
+            <ScreenMessage title="Mantenha este aparelho" message="Não desinstale o Ampara nem limpe os dados do app. Se os registros não abrirem após a migração, interrompa a atualização e peça suporte antes de tentar qualquer outra ação." />
           </>
         ) : (
-          <ScreenMessage title="Um momento" message="Protegendo os registros locais. Isso acontece durante a atualização." />
+          <ScreenMessage title="Um momento" message="Finalizando a atualização dos registros locais." />
         )}
       </AppScreen>
     );

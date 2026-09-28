@@ -13,10 +13,21 @@ let mockExportedState: FakeState | null = null;
 let mockOpenedState: FakeState | null = null;
 let mockMigrationTempState: FakeState | null = null;
 let mockBackupRecoveryTempState: FakeState | null = null;
+let mockPlaintextExportState: FakeState | null = null;
+let mockBridgeCipherBackupState: FakeState | null = null;
 const mockGetScheduledNotifications = jest.fn(async () => [{ identifier: 'old-notification' }]);
 const mockCancelScheduledNotification = jest.fn(async (_id: string) => undefined);
 
-type FakeState = { encrypted: boolean; expectedKey: string | null; appliedKey: string; tables: number; userVersion: number };
+type FakeState = {
+  encrypted: boolean;
+  expectedKey: string | null;
+  appliedKey: string;
+  tables: number;
+  userVersion: number;
+  schema?: { type: string; name: string; table_name: string; sql: string }[];
+  rows?: Record<string, Record<string, unknown>[]>;
+  sequence?: { name: string; seq: number }[];
+};
 
 jest.mock('expo-secure-store', () => ({
   WHEN_UNLOCKED: 1,
@@ -78,6 +89,9 @@ jest.mock('expo-sqlite', () => ({
         { sourceTablesOnExport: mockBackupTableCount },
       ).db;
     }
+    if (name === 'ampara.db.ciphertext-bridge-backup' && mockBridgeCipherBackupState) {
+      return mockFakeConnection(path, mockBridgeCipherBackupState).db;
+    }
     if (wasPresent && name.endsWith('.cipher-migration.tmp') && mockMigrationTempState) {
       mockExportedState = mockMigrationTempState;
       return mockFakeConnection(path, mockMigrationTempState).db;
@@ -85,6 +99,10 @@ jest.mock('expo-sqlite', () => ({
     if (wasPresent && name.endsWith('.backup-restore.tmp') && mockBackupRecoveryTempState) {
       mockExportedState = mockBackupRecoveryTempState;
       return mockFakeConnection(path, mockBackupRecoveryTempState).db;
+    }
+    if (name.endsWith('.plaintext-bridge.tmp') && mockPlaintextExportState) {
+      mockExportedState = mockPlaintextExportState;
+      return mockFakeConnection(path, mockPlaintextExportState).db;
     }
     return mockFakeConnection(
       path,
@@ -99,7 +117,7 @@ jest.mock('expo-notifications', () => ({
 }));
 
 import {
-  initializeEncryptedDatabase, withEncryptedExclusiveTransaction,
+  initializeEncryptedDatabase, initializePlaintextBridgeDatabase, withEncryptedExclusiveTransaction,
 } from '@/src/database/encryption';
 
 const originalPlatform = Platform.OS;
@@ -119,6 +137,10 @@ function mockFakeConnection(
       if (setKey) state.appliedKey = setKey[1];
       const setUserVersion = /^PRAGMA user_version = (\d+)$/i.exec(sql);
       if (setUserVersion) state.userVersion = Number(setUserVersion[1]);
+      const setPlaintextVersion = /^PRAGMA plaintext\.user_version = (\d+)$/i.exec(sql);
+      if (setPlaintextVersion && mockPlaintextExportState) {
+        mockPlaintextExportState.userVersion = Number(setPlaintextVersion[1]);
+      }
     }),
     closeAsync: jest.fn(async () => { mockEvents.push(`close:${path}`); }),
     getFirstAsync: jest.fn(async (sql: string) => {
@@ -126,6 +148,18 @@ function mockFakeConnection(
       if (sql === 'PRAGMA cipher_version') return { cipher_version: '4.8.0' };
       if (sql === 'PRAGMA user_version') return { user_version: state.userVersion };
       if (sql.includes('sqlcipher_export')) {
+        if (sql.includes("sqlcipher_export('plaintext')")) {
+          mockPlaintextExportState = {
+            ...state,
+            encrypted: false,
+            expectedKey: null,
+            appliedKey: '',
+            schema: state.schema,
+            rows: state.rows,
+            sequence: state.sequence,
+          };
+          return { result: 0 };
+        }
         state.encrypted = true;
         state.expectedKey = state.appliedKey;
         state.tables = sourceTablesOnExport;
@@ -136,10 +170,26 @@ function mockFakeConnection(
         if (state.encrypted && state.appliedKey !== state.expectedKey) throw new Error('file is not a database');
         return { quick_check: 'ok' };
       }
+      if (sql.includes("name = 'sqlite_sequence'")) return state.sequence?.length ? { present: 1 } : null;
       if (sql.includes('sqlite_master')) {
         if (state.encrypted && state.appliedKey !== state.expectedKey) throw new Error('file is not a database');
         return { count: state.tables };
       }
+      throw new Error(`Unexpected SQL: ${sql}`);
+    }),
+    getAllAsync: jest.fn(async (sql: string) => {
+      if (state.encrypted && state.appliedKey !== state.expectedKey) throw new Error('file is not a database');
+      if (sql.includes('FROM sqlite_master')) {
+        return state.schema ?? Array.from({ length: state.tables }, (_, index) => ({
+          type: 'table',
+          name: `table_${index}`,
+          table_name: `table_${index}`,
+          sql: `CREATE TABLE table_${index} (id INTEGER)`,
+        }));
+      }
+      if (sql.includes('FROM sqlite_sequence')) return state.sequence ?? [];
+      const table = /FROM "([^"]+)"/.exec(sql)?.[1];
+      if (table) return state.rows?.[table] ?? [];
       throw new Error(`Unexpected SQL: ${sql}`);
     }),
   };
@@ -159,9 +209,132 @@ describe('SQLCipher database initialization', () => {
     mockOpenedState = null;
     mockMigrationTempState = null;
     mockBackupRecoveryTempState = null;
+    mockPlaintextExportState = null;
+    mockBridgeCipherBackupState = null;
     mockGetScheduledNotifications.mockClear();
     mockCancelScheduledNotification.mockClear();
     Platform.OS = originalPlatform;
+  });
+
+  it('decrypts the 8.1 database in a verified bridge migration while preserving every row and sequence', async () => {
+    Platform.OS = 'ios';
+    const sourcePath = '/app/documents/SQLite/ampara.db';
+    const key = '91'.repeat(32);
+    const schema = [
+      { type: 'table', name: 'care_recipients', table_name: 'care_recipients', sql: 'CREATE TABLE care_recipients (id INTEGER PRIMARY KEY, person_name TEXT)' },
+      { type: 'table', name: 'care_events', table_name: 'care_events', sql: 'CREATE TABLE care_events (id INTEGER PRIMARY KEY, title TEXT, notification_id TEXT)' },
+    ];
+    const rows = {
+      care_recipients: [{ id: 9, person_name: 'Lia' }],
+      care_events: [{ id: 17, title: 'Consulta', notification_id: 'old-device-id' }],
+    };
+    const sourceState: FakeState = {
+      encrypted: true, expectedKey: key, appliedKey: '', tables: 2, userVersion: 2, schema, rows,
+      sequence: [{ name: 'care_events', seq: 17 }],
+    };
+    mockFiles.add(sourcePath);
+    mockFileSizes.set(sourcePath, 4096);
+    mockSecrets.set('ampara.sqlcipher.key.v1', key);
+    mockSecrets.set('ampara.sqlcipher.state.v1', 'ready');
+    mockOpenedState = sourceState;
+    const previousConnection = mockFakeConnection(sourcePath, { ...sourceState, appliedKey: '' });
+
+    const plaintext = await initializePlaintextBridgeDatabase(previousConnection.db);
+
+    expect((plaintext as unknown as { databasePath: string }).databasePath).toBe(sourcePath);
+    expect(mockExportedState).toMatchObject({
+      encrypted: false,
+      userVersion: 2,
+      schema,
+      rows,
+      sequence: [{ name: 'care_events', seq: 17 }],
+    });
+    expect(mockSecrets.has('ampara.sqlcipher.key.v1')).toBe(false);
+    expect(mockSecrets.has('ampara.sqlcipher.state.v1')).toBe(false);
+    expect(mockFiles.has(`${sourcePath}.ciphertext-bridge-backup`)).toBe(false);
+    expect(mockFiles.has(`${sourcePath}.plaintext-bridge.tmp`)).toBe(false);
+    expect(mockEvents.some((event) => event.includes("sqlcipher_export('plaintext')"))).toBe(true);
+  });
+
+  it('keeps a 7.1 plaintext database unencrypted and does not create a key', async () => {
+    Platform.OS = 'android';
+    const sourcePath = '/app/documents/SQLite/ampara.db';
+    const source = mockFakeConnection(sourcePath, {
+      encrypted: false, expectedKey: null, appliedKey: '', tables: 2, userVersion: 2,
+    });
+    mockFiles.add(sourcePath);
+    mockFileSizes.set(sourcePath, 4096);
+
+    await initializePlaintextBridgeDatabase(source.db);
+
+    expect(source.statements.some((sql) => sql.startsWith('PRAGMA key'))).toBe(false);
+    expect(source.statements.some((sql) => sql.includes('sqlcipher_export'))).toBe(false);
+    expect(mockSecrets.has('ampara.sqlcipher.key.v1')).toBe(false);
+  });
+
+  it('resumes a pending plaintext migration from the encrypted safety sibling', async () => {
+    Platform.OS = 'ios';
+    const mainPath = '/app/documents/SQLite/ampara.db';
+    const key = '23'.repeat(32);
+    const backupPath = `${mainPath}.ciphertext-bridge-backup`;
+    const schema = [{ type: 'table', name: 'care_profile', table_name: 'care_profile', sql: 'CREATE TABLE care_profile (id INTEGER)' }];
+    const rows = { care_profile: [{ id: 1, person_name: 'Bia' }] };
+    mockSecrets.set('ampara.sqlcipher.key.v1', key);
+    mockSecrets.set('ampara.sqlcipher.plaintext-bridge.v1', 'pending');
+    mockFiles.add(mainPath);
+    mockFileSizes.set(mainPath, 0);
+    mockFiles.add(backupPath);
+    mockFileSizes.set(backupPath, 4096);
+    mockBridgeCipherBackupState = {
+      encrypted: true, expectedKey: key, appliedKey: '', tables: 1, userVersion: 2, schema, rows,
+    };
+    const emptyMain = mockFakeConnection(mainPath, { encrypted: false, expectedKey: null, appliedKey: '', tables: 0, userVersion: 0 });
+
+    const plaintext = await initializePlaintextBridgeDatabase(emptyMain.db);
+
+    expect((plaintext as unknown as { databasePath: string }).databasePath).toBe(mainPath);
+    expect(mockExportedState).toMatchObject({ encrypted: false, schema, rows, userVersion: 2 });
+    expect(mockFiles.has(backupPath)).toBe(false);
+    expect(mockSecrets.has('ampara.sqlcipher.key.v1')).toBe(false);
+    expect(mockSecrets.has('ampara.sqlcipher.plaintext-bridge.v1')).toBe(false);
+  });
+
+  it('promotes a verified plaintext bridge temp after the encrypted source move was interrupted', async () => {
+    Platform.OS = 'android';
+    const mainPath = '/app/documents/SQLite/ampara.db';
+    const tempPath = `${mainPath}.plaintext-bridge.tmp`;
+    const schema = [{ type: 'table', name: 'care_profile', table_name: 'care_profile', sql: 'CREATE TABLE care_profile (id INTEGER)' }];
+    const rows = { care_profile: [{ id: 1, person_name: 'Bia' }] };
+    mockSecrets.set('ampara.sqlcipher.plaintext-bridge.v1', 'pending');
+    mockFiles.add(mainPath);
+    mockFileSizes.set(mainPath, 0);
+    mockFiles.add(tempPath);
+    mockFileSizes.set(tempPath, 4096);
+    mockPlaintextExportState = {
+      encrypted: false, expectedKey: null, appliedKey: '', tables: 1, userVersion: 2, schema, rows,
+    };
+    const emptyMain = mockFakeConnection(mainPath, { encrypted: false, expectedKey: null, appliedKey: '', tables: 0, userVersion: 0 });
+
+    const plaintext = await initializePlaintextBridgeDatabase(emptyMain.db);
+
+    expect((plaintext as unknown as { databasePath: string }).databasePath).toBe(mainPath);
+    expect(mockExportedState).toMatchObject({ encrypted: false, schema, rows, userVersion: 2 });
+    expect(mockFiles.has(tempPath)).toBe(false);
+    expect(mockSecrets.has('ampara.sqlcipher.plaintext-bridge.v1')).toBe(false);
+  });
+
+  it('fails closed instead of replacing an encrypted database if its stored key is missing', async () => {
+    Platform.OS = 'ios';
+    const sourcePath = '/app/documents/SQLite/ampara.db';
+    mockFiles.add(sourcePath);
+    mockFileSizes.set(sourcePath, 4096);
+    const source = mockFakeConnection(sourcePath, {
+      encrypted: true, expectedKey: 'ab'.repeat(32), appliedKey: '', tables: 2, userVersion: 2,
+    });
+
+    await expect(initializePlaintextBridgeDatabase(source.db)).rejects.toThrow(/chave segura não está disponível/);
+    expect(source.raw.execAsync).not.toHaveBeenCalled();
+    expect(mockFiles.has(sourcePath)).toBe(true);
   });
 
   it('exports a legacy database to a new encrypted file, verifies it, then replaces the original', async () => {
@@ -254,7 +427,7 @@ describe('SQLCipher database initialization', () => {
     expect(mockEvents).toContain(`close:${sourcePath}`);
   });
 
-  it('finishes an interrupted backup restore from its staged encrypted file', async () => {
+  it('finishes an interrupted 8.1 recovery stage, then migrates it to plaintext', async () => {
     Platform.OS = 'ios';
     const sourcePath = '/app/documents/SQLite/ampara.db';
     const oldKey = 'ab'.repeat(32);
@@ -281,11 +454,11 @@ describe('SQLCipher database initialization', () => {
     mockBackupRecoveryTempState = { encrypted: true, expectedKey: newKey, appliedKey: '', tables: 8, userVersion: 2 };
     const oldDatabase = mockFakeConnection(sourcePath, mockOpenedState);
 
-    const recovered = await initializeEncryptedDatabase(oldDatabase.db);
+    const recovered = await initializePlaintextBridgeDatabase(oldDatabase.db);
 
     expect(oldDatabase.raw.closeAsync).toHaveBeenCalled();
     expect((recovered as unknown as { databasePath: string }).databasePath).toBe(sourcePath);
-    expect(mockSecrets.get('ampara.sqlcipher.key.v1')).toBe(newKey);
+    expect(mockSecrets.has('ampara.sqlcipher.key.v1')).toBe(false);
     expect(mockSecrets.has(`ampara.sqlcipher.backup-recovery-key.v1.${recoveryId}`)).toBe(false);
     expect(mockSecrets.has('ampara.sqlcipher.backup-recovery-state.v1')).toBe(false);
     expect(mockSecrets.has('ampara.sqlcipher.backup-notifications.v1')).toBe(false);
@@ -302,7 +475,8 @@ describe('SQLCipher database initialization', () => {
     expect(mockFiles.has(`${originalPath}-shm`)).toBe(false);
     expect(mockFiles.has(`${sourcePath}-wal`)).toBe(false);
     expect(mockFiles.has(`${sourcePath}-shm`)).toBe(false);
-    expect(mockSecrets.get('ampara.sqlcipher.state.v1')).toBe('ready');
+    expect(mockSecrets.has('ampara.sqlcipher.state.v1')).toBe(false);
+    expect(mockEvents.some((event) => event.includes("sqlcipher_export('plaintext')"))).toBe(true);
   });
 
   it('fails closed when an encrypted database has lost its key', async () => {
