@@ -3,6 +3,8 @@ import * as SecureStore from 'expo-secure-store';
 import type { SQLiteDatabase } from 'expo-sqlite';
 
 const PENDING_IDS_NAME = 'ampara.restore.pending-notification-ids.v1';
+const LEGACY_RECOVERY_NOTIFICATION_STATE_NAME = 'ampara.sqlcipher.backup-notifications.v1';
+const LEGACY_RECOVERY_NOTIFICATION_DONE_NAME = 'ampara.sqlcipher.backup-notifications-done.v1';
 
 async function readPendingIds(): Promise<string[]> {
   const serialized = await SecureStore.getItemAsync(PENDING_IDS_NAME, {
@@ -14,14 +16,6 @@ async function readPendingIds(): Promise<string[]> {
     throw new Error('A lista de lembretes pendentes está inválida.');
   }
   return [...new Set(parsed)];
-}
-
-export async function stagePendingNotificationCleanup(notificationIds: string[]): Promise<void> {
-  if (notificationIds.length === 0) return;
-  const existing = await readPendingIds();
-  await SecureStore.setItemAsync(PENDING_IDS_NAME, JSON.stringify([...new Set([...existing, ...notificationIds])]), {
-    keychainAccessible: SecureStore.WHEN_UNLOCKED,
-  });
 }
 
 /** Cancels only IDs no longer referenced by the database; retries are safe after app termination. */
@@ -58,6 +52,61 @@ export async function retryPendingNotificationCleanup(
       return false;
     }
     await SecureStore.deleteItemAsync(PENDING_IDS_NAME);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function getPendingLegacyNotificationCleanupStatus(): Promise<'none' | 'pending' | 'manual'> {
+  const value = await SecureStore.getItemAsync(LEGACY_RECOVERY_NOTIFICATION_STATE_NAME, {
+    keychainAccessible: SecureStore.WHEN_UNLOCKED,
+  }).catch(() => null);
+  if (!value) return 'none';
+  try {
+    const record = JSON.parse(value) as { status?: string };
+    return record.status === 'manual' ? 'manual' : record.status === 'pending' ? 'pending' : 'none';
+  } catch {
+    return 'none';
+  }
+}
+
+export async function retryPendingLegacyNotificationCleanup(): Promise<boolean> {
+  const value = await SecureStore.getItemAsync(LEGACY_RECOVERY_NOTIFICATION_STATE_NAME, {
+    keychainAccessible: SecureStore.WHEN_UNLOCKED,
+  }).catch(() => null);
+  if (!value) return true;
+
+  let record: { status: 'pending' | 'manual'; recoveryId: string; ids: string[] };
+  try {
+    record = JSON.parse(value) as typeof record;
+  } catch {
+    return false;
+  }
+  if (record.status === 'manual') return false;
+
+  const completedFor = await SecureStore.getItemAsync(LEGACY_RECOVERY_NOTIFICATION_DONE_NAME, {
+    keychainAccessible: SecureStore.WHEN_UNLOCKED,
+  }).catch(() => null);
+  if (completedFor === record.recoveryId) {
+    await SecureStore.deleteItemAsync(LEGACY_RECOVERY_NOTIFICATION_STATE_NAME).catch(() => undefined);
+    return true;
+  }
+
+  try {
+    const remainingIds = [...record.ids];
+    while (remainingIds.length > 0) {
+      await Notifications.cancelScheduledNotificationAsync(remainingIds[0]);
+      remainingIds.shift();
+      record = { ...record, ids: [...remainingIds] };
+      await SecureStore.setItemAsync(LEGACY_RECOVERY_NOTIFICATION_STATE_NAME, JSON.stringify(record), {
+        keychainAccessible: SecureStore.WHEN_UNLOCKED,
+      });
+    }
+    await SecureStore.setItemAsync(LEGACY_RECOVERY_NOTIFICATION_DONE_NAME, record.recoveryId, {
+      keychainAccessible: SecureStore.WHEN_UNLOCKED,
+    });
+    await SecureStore.deleteItemAsync(LEGACY_RECOVERY_NOTIFICATION_STATE_NAME);
     return true;
   } catch {
     return false;

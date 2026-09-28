@@ -13,8 +13,8 @@ import { WebTitle } from '@/src/components/WebTitle';
 import { DatabaseProvider, useAppDatabase } from '@/src/database/DatabaseProvider';
 import { hideNativeSplashScreen } from '@/src/splashScreen';
 import {
-  getBackupRecoveryNotificationStatus, retryPendingBackupRecoveryNotifications,
-} from '@/src/database/encryption';
+  getPendingLegacyNotificationCleanupStatus, retryPendingLegacyNotificationCleanup,
+} from '@/src/database/notificationCleanup';
 import { getCareProfile } from '@/src/database/repository';
 import { theme } from '@/src/theme';
 
@@ -52,7 +52,7 @@ function RootNavigator() {
   useEffect(() => {
     let active = true;
     setStatus('loading');
-    void Promise.all([getCareProfile(db), getBackupRecoveryNotificationStatus()])
+    void Promise.all([getCareProfile(db), getPendingLegacyNotificationCleanupStatus()])
       .then(([profile, cleanupStatus]) => {
         if (!active) return;
         setNotificationCleanupStatus(cleanupStatus);
@@ -71,7 +71,7 @@ function RootNavigator() {
   if (status === 'error') {
     return (
       <AppScreen>
-        <ScreenMessage tone="error" title="Não foi possível abrir os registros" message="O banco seguro não respondeu. Seus arquivos permanecem neste aparelho; tente novamente." />
+        <ScreenMessage tone="error" title="Não foi possível abrir os registros" message="O banco local não pôde ser lido. Seus arquivos permanecem neste aparelho; tente novamente ou entre em contato com o suporte." />
         <PrimaryButton title="Tentar novamente" onPress={() => setAttempt((value) => value + 1)} />
       </AppScreen>
     );
@@ -84,11 +84,11 @@ function RootNavigator() {
           <ScreenMessage
             title="Revise os lembretes locais"
             message={notificationCleanupStatus === 'pending'
-              ? 'Alguns lembretes anteriores à restauração podem continuar agendados. Tente limpar esses avisos e recrie somente os necessários.'
-              : 'Não foi possível identificar todos os avisos anteriores. Revise a agenda e as notificações do aparelho antes de criar novos lembretes.'}
-            actionLabel={notificationCleanupStatus === 'pending' ? 'Tentar limpar avisos antigos' : undefined}
+              ? 'Alguns lembretes antigos podem continuar agendados. Tente limpar esses avisos e recrie somente os necessários.'
+              : 'Não foi possível identificar todos os lembretes antigos. Revise as notificações do aparelho antes de criar novos.'}
+            actionLabel={notificationCleanupStatus === 'pending' ? 'Tentar limpar lembretes antigos' : undefined}
             onAction={notificationCleanupStatus === 'pending'
-              ? () => void retryPendingBackupRecoveryNotifications().then(getBackupRecoveryNotificationStatus).then(setNotificationCleanupStatus)
+              ? () => void retryPendingLegacyNotificationCleanup().then(getPendingLegacyNotificationCleanupStatus).then(setNotificationCleanupStatus)
               : undefined}
           />
         ) : null}

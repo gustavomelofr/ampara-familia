@@ -1,34 +1,39 @@
 # Ampara Família — simplificação e App Store
 
-**Estado:** build-ponte **1.0 (9.1)** enviada ao TestFlight pelo workflow `36436758125`; confirmar processamento e instalar em todos os aparelhos controlados antes da versão final. A build anterior 8.1 contém SQLCipher e dados cifrados. Não enviar uma build SQLite-only diretamente a aparelhos que ainda tenham esses dados.
+**Estado:** Gustavo confirmou que a build-ponte **1.0 (10.1)** foi instalada sobre a versão existente e que os registros foram conferidos nos aparelhos controlados. A correção da splash está no commit `b984d32`. O código final SQLite-only agora está implementado: SQLCipher está desativado no config nativo iOS/Android; a inicialização valida o arquivo SQLite e falha sem sobrescrever arquivos não legíveis. Próximo passo: gerar a build final e validá-la no TestFlight antes de App Review.
 
-**Rascunho no App Store Connect:** salvei o subtítulo, descrição, palavras-chave e notas de revisão simplificadas; desmarquei “Início de sessão obrigatório” e deixei selecionado “Não coletamos dados” como rascunho. Não publiquei essa declaração nem submeti a versão à App Review; revisar tudo contra a build final.
+**App Store Connect:** subtítulo, descrição, palavras-chave, notas e contato da revisão salvos; “Início de sessão obrigatório” desmarcado. A declaração “Dados não coletados” foi publicada e a URL pública da política está cadastrada. Categoria **Estilo de vida**, classificação **+4**, direitos de conteúdo sem terceiros, preço gratuito e disponibilidade somente no Brasil. Copyright continua vazio; versão 1.0 não tem build final anexada. Nada foi submetido à App Review.
 
 ## Plano em duas builds
 
 ### Build-ponte TestFlight
 
 - [x] Remover Face ID/código próprio, bloqueio de captura, telas de backup/restauração e respetivos textos/dependências no código-ponte.
-- [ ] Manter SQLCipher invisível apenas para abrir 8.1 e migrar, no mesmo aparelho, a base completa para SQLite local sem SQLCipher.
-- [ ] Em dispositivos com base 7.1 em SQLite simples, manter os dados e atualizar o esquema normalmente.
-- [ ] Não substituir a base até comparar esquema, IDs, linhas, pessoa ativa, `sqlite_sequence` e integridade; manter a origem cifrada até reabrir e conferir a base simples.
-- [ ] Distribuir **somente pelo TestFlight**; não submeter à App Review ainda.
-- [ ] Instalar a ponte sobre a 8.1 em todos os aparelhos controlados, sem desinstalar. Usar dados fictícios e conferir as sete tabelas de usuário, os dois perfis, IDs/sequências, itens concluídos/inativos, perfil ativo e lembretes.
+- [x] Manter SQLCipher invisível apenas para abrir 8.1 e migrar, no mesmo aparelho, a base completa para SQLite local sem SQLCipher.
+- [x] Em dispositivos com base 7.1 em SQLite simples, manter os dados e atualizar o esquema normalmente.
+- [x] Não substituir a base até comparar esquema, IDs, linhas, pessoa ativa, `sqlite_sequence` e integridade; manter a origem cifrada até reabrir e conferir a base simples.
+- [x] Distribuir **somente pelo TestFlight**; não submeter à App Review ainda.
+- [x] Gustavo confirmou instalação da ponte sobre a versão existente e conferência dos registros nos aparelhos controlados.
+- [x] Corrigir a splash nativa para ocultá-la depois que o layout React renderizar; manter o feedback de carregamento/erro visível durante a abertura do banco.
 
 ### Build final SQLite-only
 
-- [ ] Só depois de confirmar em cada aparelho que a ponte abriu todos os registros, criar outra build removendo o plugin/biblioteca SQLCipher e SecureStore relacionado à chave. Manter no código um erro não destrutivo para arquivos não migrados; nunca criar silenciosamente uma base vazia.
-- [ ] Não prometer recuperação ao desinstalar ou trocar de aparelho: esta versão não terá backup/restauração nem sincronização. Avisar que limpar dados ou desinstalar pode apagar os registros.
-- [ ] Repetir os testes em dispositivo real e confirmar que o alerta `Expo Head` continua ausente.
+- [x] Após confirmar a migração em todos os aparelhos, remover o plugin/biblioteca SQLCipher e eliminar as chaves SQLCipher antigas do SecureStore após validar o SQLite. Arquivos inválidos ou ainda cifrados falham sem sobrescrita nem criação silenciosa de base vazia.
+- [x] Não oferecer backup/restauração nem sincronização; avisar que limpar dados ou desinstalar pode apagar os registros.
+- [ ] Gerar e instalar a build final SQLite-only pelo TestFlight como atualização, sem desinstalar, e conferir abertura e dados em dispositivo real.
+- [ ] Confirmar que o alerta `Expo Head` continua ausente na build final.
 
 ## Requisitos da App Store (continuam obrigatórios)
 
-- [ ] Publicar a política de privacidade em URL HTTPS estável, preenchendo responsável, contato e data em `PRIVACY_POLICY_DRAFT.md`.
-- [ ] Fornecer URL pública de suporte e um e-mail de contato real.
-- [ ] Definir a categoria, classificação etária e direitos de conteúdo da listagem; a categoria e a classificação ainda não estão concluídas no App Store Connect.
+- [x] Publicar política de privacidade em HTTPS: https://gustavomelofr.github.io/ampara-legal/privacidade.html (contato: `gustavodemelo34@gmail.com`; última revisão: 28/09/2026).
+- [x] Publicar URL pública de suporte em HTTPS: https://gustavomelofr.github.io/ampara-legal/suporte.html.
+- [x] Inserir e salvar a URL da política de privacidade no App Store Connect.
+- [x] Salvar a URL de suporte na versão 1.0 e completar o contato de revisão (Gustavo de Melo Ferreira, `gustavodemelo34@gmail.com`, telefone fornecido).
+- [x] Definir categoria primária **Estilo de vida**, classificação etária **+4** e declarar que o app não contém conteúdo de terceiros.
+- [x] Definir preço gratuito (R$ 0,00 como preço de referência; tabela atualizada para 175 países/regiões) e disponibilidade somente no Brasil.
 - [ ] Capturar telas da **build final** com informações inteiramente fictícias e dimensões aceitas no App Store Connect.
-- [ ] Completar descrição, subtítulo, palavras-chave, categoria, classificação etária, direitos, URLs e notas de revisão sem promessas clínicas.
-- [ ] Revisar App Privacy e responder ao questionário de exportação/criptografia de acordo com a build final. Não reutilizar as declarações antigas de SQLCipher/AES sem revisão.
+- [ ] Completar Copyright na ficha 1.0 (o App Store Connect não manteve o valor digitado após salvar) e revisar descrição, subtítulo, palavras-chave e notas.
+- [x] Publicar a declaração App Privacy “Dados não coletados”, conforme o funcionamento sem envio automático de dados. Revisar também o questionário de exportação/criptografia conforme a build final.
 - [ ] Selecionar apenas a build final, configurar gratuita no Brasil e liberação manual após aprovação. Enviar à App Review somente depois dos itens acima.
 
 ## Texto de loja (rascunho)

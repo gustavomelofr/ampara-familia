@@ -43,7 +43,7 @@
           "backgroundColor": "#F5F2EA"
         }
       ],
-      ["expo-sqlite", { "useSQLCipher": true }],
+      ["expo-sqlite", { "useSQLCipher": false }],
       "expo-notifications",
       "@react-native-community/datetimepicker",
       ["expo-secure-store", { "faceIDPermission": false, "configureAndroidBackup": false }]

@@ -22,7 +22,7 @@ O projeto usa Expo SDK 57, React Native, TypeScript, Expo Router e Expo SQLite. 
 - Prévia de resumo e compartilhamento manual por seção.
 - Apagar todos os dados a partir da tela de privacidade.
 
-Uma versão-ponte simplifica a interface e migra, uma única vez, os bancos SQLCipher da build TestFlight 8.1 para SQLite local sem criptografia própria. O leitor SQLCipher permanece temporariamente apenas para essa migração; depois de confirmar todos os aparelhos atualizados, será removido numa build seguinte. Os registros não têm sincronização nem backup próprio: permanecem no aparelho e podem ser perdidos se o app/dados forem removidos ou se trocar de aparelho.
+Os registros são armazenados em SQLite local neste aparelho. O app não oferece sincronização, criptografia própria do banco, backup ou restauração: os dados podem ser perdidos se o app for desinstalado, os dados forem apagados ou houver troca de aparelho. Os aparelhos que vieram da TestFlight 8.1 foram migrados pela atualização-ponte antes desta versão final.
 
 ## Cuidados de produto
 

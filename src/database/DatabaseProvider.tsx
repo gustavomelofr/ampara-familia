@@ -12,7 +12,7 @@ const DatabaseContext = createContext<SQLiteDatabase | null>(null);
 
 export function useAppDatabase(): SQLiteDatabase {
   const database = useContext(DatabaseContext);
-  if (!database) throw new Error('O armazenamento seguro do Ampara ainda não está pronto.');
+  if (!database) throw new Error('O banco local do Ampara ainda não está pronto.');
   return database;
 }
 
@@ -62,12 +62,12 @@ export function DatabaseProvider({ children }: PropsWithChildren) {
           eyebrow="AMPARA FAMÍLIA"
           title={error ? 'Não foi possível preparar o banco local.' : 'Preparando o banco local.'}
           subtitle={error
-            ? 'O acesso aos registros está pausado. Mantenha o app instalado e não apague os dados deste aparelho.'
+            ? 'O acesso aos registros está pausado. Seus arquivos não foram alterados; mantenha o app instalado e não apague os dados deste aparelho. Entre em contato com o suporte antes de tentar de novo.'
             : 'A atualização preserva e organiza os registros neste aparelho.'}
         />
         {error ? (
           <>
-            <ScreenMessage tone="error" title="Não foi possível abrir os registros" message={error} />
+            <ScreenMessage tone="error" title="Não foi possível abrir os registros locais" message={error} />
             <PrimaryButton title="Tentar novamente" onPress={() => setAttempt((value) => value + 1)} />
             <ScreenMessage title="Mantenha este aparelho" message="Não desinstale o Ampara nem limpe os dados do app. Se os registros não abrirem após a migração, interrompa a atualização e peça suporte antes de tentar qualquer outra ação." />
           </>

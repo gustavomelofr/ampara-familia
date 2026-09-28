@@ -2,7 +2,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 import { Platform } from 'react-native';
 
 import { retryPendingNotificationCleanup } from '@/src/database/notificationCleanup';
-import { initializePlaintextBridgeDatabase } from '@/src/database/encryption';
+import { removeLegacySqlCipherSecrets } from '@/src/database/legacyEncryptionCleanup';
 
 export const DATABASE_NAME = 'ampara.db';
 const DATABASE_VERSION = 2;
@@ -72,24 +72,40 @@ CREATE TABLE IF NOT EXISTS medication_notes (
 `;
 
 export async function migrateDatabase(db: SQLiteDatabase): Promise<SQLiteDatabase> {
-  const originallyOpenedDatabase = db;
-  db = await initializePlaintextBridgeDatabase(db);
-  try {
-    db = await migrateDatabaseSchema(db);
-    if (Platform.OS === 'ios' || Platform.OS === 'android') {
-      await retryPendingNotificationCleanup(db);
-    }
-    return db;
-  } catch (error) {
-    if (db !== originallyOpenedDatabase) await db.closeAsync().catch(() => undefined);
-    throw error;
+  db = await migrateDatabaseSchema(db);
+  if (Platform.OS === 'ios' || Platform.OS === 'android') {
+    await retryPendingNotificationCleanup(db);
+    await removeLegacySqlCipherSecrets();
   }
+  return db;
 }
 
 export async function migrateDatabaseSchema(db: SQLiteDatabase): Promise<SQLiteDatabase> {
-  await db.execAsync('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
+  let integrity: { quick_check: string }[];
+  try {
+    // Read before any journal-mode or schema writes so SQLCipher/unknown files fail closed.
+    integrity = await db.getAllAsync<{ quick_check: string }>('PRAGMA quick_check');
+  } catch {
+    throw new Error('Este arquivo não pôde ser validado como banco local. Seus registros não foram alterados; mantenha o app instalado e contate o suporte.');
+  }
+  if (integrity.length === 0 || integrity.some((row) => row.quick_check !== 'ok')) {
+    throw new Error('Este arquivo não pôde ser validado como banco local. Seus registros não foram alterados; mantenha o app instalado e contate o suporte.');
+  }
+
   const row = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
   let currentVersion = row?.user_version ?? 0;
+  const existingTables = await db.getFirstAsync<{ table_count: number }>(
+    `SELECT COUNT(*) AS table_count FROM sqlite_master
+     WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name != 'android_metadata'`,
+  );
+  if (currentVersion > DATABASE_VERSION) {
+    throw new Error('Este banco foi criado por uma versão mais recente do app. Seus registros não foram alterados.');
+  }
+  if (currentVersion === 0 && (existingTables?.table_count ?? 0) > 0) {
+    throw new Error('O banco local tem um formato desconhecido. Seus registros não foram alterados; contate o suporte.');
+  }
+
+  await db.execAsync('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
 
   if (currentVersion < 1) {
     await db.execAsync(INITIAL_SCHEMA);
