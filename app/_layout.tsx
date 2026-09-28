@@ -1,5 +1,4 @@
 import { DefaultTheme, Stack, ThemeProvider, useRouter } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
@@ -12,6 +11,7 @@ import { PrimaryButton } from '@/src/components/PrimaryButton';
 import { ScreenMessage } from '@/src/components/ScreenMessage';
 import { WebTitle } from '@/src/components/WebTitle';
 import { DatabaseProvider, useAppDatabase } from '@/src/database/DatabaseProvider';
+import { hideNativeSplashScreen } from '@/src/splashScreen';
 import {
   getBackupRecoveryNotificationStatus, retryPendingBackupRecoveryNotifications,
 } from '@/src/database/encryption';
@@ -19,8 +19,6 @@ import { getCareProfile } from '@/src/database/repository';
 import { theme } from '@/src/theme';
 
 export { ErrorBoundary } from 'expo-router';
-
-void SplashScreen.preventAutoHideAsync();
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -32,6 +30,10 @@ Notifications.setNotificationHandler({
 });
 
 export default function RootLayout() {
+  useEffect(() => {
+    void hideNativeSplashScreen();
+  }, []);
+
   return (
     <>
       <WebTitle />
