@@ -130,31 +130,32 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          fastlane deliver upload_screenshots \
-            --app_identifier com.gustavo.ampara \
-            --app_version 1.0 \
-            --screenshots_path store-screenshots \
-            --api_key_path "$ASC_API_KEY_PATH" \
-            --skip_metadata true \
-            --skip_binary_upload true \
-            --skip_app_version_update true
+          fastlane run upload_to_app_store \
+            app_identifier:com.gustavo.ampara \
+            app_version:1.0 \
+            screenshots_path:store-screenshots \
+            "api_key_path:$ASC_API_KEY_PATH" \
+            skip_metadata:true \
+            skip_binary_upload:true \
+            skip_app_version_update:true \
+            force:true
 
       - name: Submit version 1.0 for Apple App Review
         if: ${{ inputs.confirm_app_review_submission }}
         shell: bash
         run: |
           set -euo pipefail
-          fastlane deliver \
-            --app_identifier com.gustavo.ampara \
-            --app_version 1.0 \
-            --api_key_path "$ASC_API_KEY_PATH" \
-            --skip_metadata true \
-            --skip_screenshots true \
-            --skip_binary_upload true \
-            --submit_for_review true \
-            --automatic_release false \
-            --force true \
-            --precheck_include_in_app_purchases false
+          fastlane run upload_to_app_store \
+            app_identifier:com.gustavo.ampara \
+            app_version:1.0 \
+            "api_key_path:$ASC_API_KEY_PATH" \
+            skip_metadata:true \
+            skip_screenshots:true \
+            skip_binary_upload:true \
+            submit_for_review:true \
+            automatic_release:false \
+            force:true \
+            precheck_include_in_app_purchases:false
 
       - name: Remove temporary App Store Connect credentials
         if: always()
