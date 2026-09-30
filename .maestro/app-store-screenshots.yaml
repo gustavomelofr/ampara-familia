@@ -39,7 +39,7 @@ appId: com.gustavo.ampara
     element: "Salvar tarefa"
     direction: DOWN
 - tapOn: "Salvar tarefa"
-- assertVisible: "Separar exames anteriores"
+- assertVisible: ".*Editar tarefa: Separar exames anteriores.*"
 - takeScreenshot:
     path: "pt-BR/01-hoje"
 
