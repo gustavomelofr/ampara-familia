@@ -43,17 +43,17 @@ appId: com.gustavo.ampara
 - takeScreenshot:
     path: "pt-BR/01-hoje"
 
-- tapOn: "Agenda"
+- tapOn: "Agenda, tab, 2 of 4"
 - assertVisible: "Datas para ter por perto."
 - takeScreenshot:
     path: "pt-BR/02-agenda"
 
-- tapOn: "Tarefas"
+- tapOn: "Tarefas, tab, 3 of 4"
 - assertVisible: "Um passo de cada vez."
 - takeScreenshot:
     path: "pt-BR/03-tarefas"
 
-- tapOn: "Mais"
+- tapOn: "Mais, tab, 4 of 4"
 - assertVisible: "Outras informações."
 - tapOn: "Despesas"
 - assertVisible: "Gastos da família."
