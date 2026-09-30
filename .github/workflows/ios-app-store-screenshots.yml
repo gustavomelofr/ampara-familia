@@ -137,10 +137,12 @@ jobs:
 
           echo "Building $scheme for $SIMULATOR_NAME"
           xcodebuild \
+            -quiet \
             -workspace "$workspace" \
             -scheme "$scheme" \
             -configuration Release \
             -sdk iphonesimulator \
+            -arch arm64 \
             -destination "platform=iOS Simulator,id=$SIMULATOR_UDID" \
             -derivedDataPath "$RUNNER_TEMP/AmparaDerivedData" \
             CODE_SIGNING_ALLOWED=NO \
