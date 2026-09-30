@@ -44,6 +44,7 @@ export default function OnboardingScreen() {
       />
       <Field
         label="Como chamamos seu familiar?"
+        testID="onboarding-person-name"
         value={personName}
         onChangeText={setPersonName}
         placeholder="Ex.: Lúcia"

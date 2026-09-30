@@ -171,7 +171,7 @@ export default function EventFormScreen() {
     <AppScreen bottomInset={24}>
       <PageHeader eyebrow="AGENDA" title={eventId ? 'Revise o compromisso.' : 'O que precisa ficar marcado?'} subtitle="Registre o que sua família precisa ter à mão." onBack={() => router.back()} />
       <ActivePersonNotice interactive={false} />
-      <Field label="Nome do compromisso" value={title} onChangeText={setTitle} placeholder="Ex.: consulta com a cardiologista" autoCapitalize="sentences" />
+      <Field label="Nome do compromisso" testID="event-title" value={title} onChangeText={setTitle} placeholder="Ex.: consulta com a cardiologista" autoCapitalize="sentences" />
       <OptionChips label="Tipo" value={kind} onChange={setKind} options={eventOptions} />
       <DateField label="Data" value={date} onChange={setDate} />
       <Field label="Horário" value={time} onChangeText={setTime} placeholder="Ex.: 09:30" keyboardType="numbers-and-punctuation" hint="Opcional. Use o formato 24 horas. Sem horário, o lembrete considera 9h." />

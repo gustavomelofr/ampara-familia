@@ -34,8 +34,8 @@ export default function NewMedicationScreen() {
     <AppScreen bottomInset={24}>
       <PageHeader eyebrow="MEDICAMENTOS" title="Anote para consultar." subtitle="Transcreva somente a informação que sua família já tem." onBack={() => router.back()} />
       <ActivePersonNotice interactive={false} />
-      <Field label="Nome do medicamento" value={name} onChangeText={setName} placeholder="Conforme aparece na embalagem" />
-      <Field label="Horário ou orientação registrada" value={schedule} onChangeText={setSchedule} placeholder="Ex.: manhã, conforme receita" />
+      <Field label="Nome do medicamento" testID="medication-name" value={name} onChangeText={setName} placeholder="Conforme aparece na embalagem" />
+      <Field label="Horário ou orientação registrada" testID="medication-schedule" value={schedule} onChangeText={setSchedule} placeholder="Ex.: manhã, conforme receita" />
       <Field label="Observações" value={notes} onChangeText={setNotes} placeholder="Opcional" multiline />
       <View style={styles.notice}><AppText tone="warning" variant="small">Não inclua dados que não estejam confirmados na receita. O app não substitui a prescrição nem confirma que uma dose foi tomada.</AppText></View>
       {error ? <AppText tone="danger" accessibilityRole="alert" style={styles.error}>{error}</AppText> : null}

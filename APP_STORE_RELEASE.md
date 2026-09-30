@@ -38,6 +38,14 @@
 - [x] Anexar somente a build final 11.1 ao rascunho, com preço gratuito no Brasil e lançamento manual após aprovação.
 - [ ] Submeter à App Review somente depois de instalar/testar a 11.1 e carregar capturas da build final.
 
+## Capturas e publicação pelo GitHub Actions
+
+- `.github/workflows/ios-app-store-screenshots.yml` compila o app para iPhone Simulator, limpa os dados do simulador, preenche a interface por Maestro com o perfil fictício **Helena Almeida** e registros ilustrativos, e gera seis capturas `pt-BR` em **1320 × 2868**.
+- Execute **Capture App Store screenshots** manualmente no GitHub Actions e marque a confirmação. O resultado aprovado pela automação fica no artifact `app-store-screenshots` por 30 dias; baixe e revise as imagens antes de seguir.
+- `.github/workflows/ios-app-store-publish.yml` recebe o ID numérico dessa execução e, somente com `confirm_screenshot_upload` marcado, baixa e valida exatamente as seis imagens antes de enviá-las à versão 1.0 no App Store Connect. Requer os secrets já usados pelo workflow do TestFlight: `ASC_API_KEY_BASE64`, `ASC_API_KEY_ID` e `ASC_API_ISSUER_ID`.
+- A caixa `confirm_app_review_submission` fica desmarcada por padrão. Marque-a somente depois de revisar as imagens e confirmar que a versão 1.0 está pronta: o workflow pede à Apple a submissão para App Review usando o build mais recente anexado e mantém o lançamento manual após aprovação.
+- Os fluxos Maestro usam dados somente fictícios e não precisam das credenciais de assinatura do TestFlight. A submissão usa a API key do App Store Connect; não depende da sessão pessoal do navegador.
+
 ## Texto de loja (rascunho)
 
 **Subtítulo sugerido:** Agenda e tarefas para a família

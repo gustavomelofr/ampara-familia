@@ -1,0 +1,164 @@
+name: Upload screenshots and submit App Store version
+
+on:
+  workflow_dispatch:
+    inputs:
+      screenshot_run_id:
+        description: Run ID of the reviewed Capture App Store screenshots workflow
+        required: true
+        type: string
+      confirm_screenshot_upload:
+        description: Confirm that the reviewed pt-BR screenshots should be uploaded to App Store Connect
+        required: true
+        type: boolean
+        default: false
+      confirm_app_review_submission:
+        description: Also submit version 1.0 and its latest attached build to Apple App Review
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: ampara-app-store-publish
+  cancel-in-progress: false
+
+jobs:
+  upload-and-optionally-submit:
+    if: ${{ inputs.confirm_screenshot_upload }}
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - name: Check out app
+        uses: actions/checkout@v4
+
+      - name: Validate capture run ID
+        shell: bash
+        env:
+          CAPTURE_RUN_ID: ${{ inputs.screenshot_run_id }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$CAPTURE_RUN_ID" =~ ^[0-9]+$ ]]; then
+            echo "Enter the numeric run ID from the successful screenshot workflow URL." >&2
+            exit 1
+          fi
+
+      - name: Download reviewed screenshot artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: app-store-screenshots
+          path: store-screenshots
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ inputs.screenshot_run_id }}
+
+      - name: Validate screenshot artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          import struct
+          from pathlib import Path
+
+          screenshot_dir = Path("store-screenshots/pt-BR")
+          expected = {
+              "01-hoje.png",
+              "02-agenda.png",
+              "03-tarefas.png",
+              "04-despesas.png",
+              "05-documentos.png",
+              "06-medicamentos.png",
+          }
+          actual = {path.name for path in screenshot_dir.glob("*.png")}
+          if actual != expected:
+              raise SystemExit(
+                  f"Expected exactly the 6 reviewed pt-BR screenshots; found {sorted(actual)}"
+              )
+          for image in sorted(screenshot_dir.glob("*.png")):
+              with image.open("rb") as stream:
+                  header = stream.read(24)
+              if header[:8] != b"\x89PNG\r\n\x1a\n" or len(header) < 24:
+                  raise SystemExit(f"Invalid PNG file: {image}")
+              width, height = struct.unpack(">II", header[16:24])
+              if (width, height) != (1320, 2868):
+                  raise SystemExit(f"Unexpected screenshot dimensions for {image}: {width}x{height}")
+              print(f"Validated {image}: {width}x{height}")
+          PY
+
+      - name: Set up Ruby for fastlane
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+
+      - name: Install fastlane
+        run: gem install fastlane --no-document
+
+      - name: Prepare App Store Connect API key
+        shell: bash
+        env:
+          ASC_API_KEY_BASE64: ${{ secrets.ASC_API_KEY_BASE64 }}
+          ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+          ASC_API_ISSUER_ID: ${{ secrets.ASC_API_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+          : "${ASC_API_KEY_BASE64:?Add the ASC_API_KEY_BASE64 GitHub secret}"
+          : "${ASC_API_KEY_ID:?Add the ASC_API_KEY_ID GitHub secret}"
+          : "${ASC_API_ISSUER_ID:?Add the ASC_API_ISSUER_ID GitHub secret}"
+
+          key_path="$RUNNER_TEMP/AuthKey_${ASC_API_KEY_ID}.p8"
+          printf '%s' "$ASC_API_KEY_BASE64" | base64 -D > "$key_path"
+          chmod 600 "$key_path"
+          python3 - "$RUNNER_TEMP/app-store-connect-api-key.json" "$key_path" "$ASC_API_KEY_ID" "$ASC_API_ISSUER_ID" <<'PY'
+          import json
+          import pathlib
+          import sys
+
+          pathlib.Path(sys.argv[1]).write_text(json.dumps({
+              "key_id": sys.argv[3],
+              "issuer_id": sys.argv[4],
+              "key": pathlib.Path(sys.argv[2]).read_text(),
+              "duration": 1200,
+              "in_house": False,
+          }))
+          PY
+          printf 'ASC_API_KEY_PATH=%s\n' "$RUNNER_TEMP/app-store-connect-api-key.json" >> "$GITHUB_ENV"
+
+      - name: Upload reviewed screenshots to App Store Connect
+        shell: bash
+        run: |
+          set -euo pipefail
+          fastlane deliver upload_screenshots \
+            --app_identifier com.gustavo.ampara \
+            --app_version 1.0 \
+            --screenshots_path store-screenshots \
+            --api_key_path "$ASC_API_KEY_PATH" \
+            --skip_metadata true \
+            --skip_binary_upload true \
+            --skip_app_version_update true
+
+      - name: Submit version 1.0 for Apple App Review
+        if: ${{ inputs.confirm_app_review_submission }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          fastlane deliver \
+            --app_identifier com.gustavo.ampara \
+            --app_version 1.0 \
+            --api_key_path "$ASC_API_KEY_PATH" \
+            --skip_metadata true \
+            --skip_screenshots true \
+            --skip_binary_upload true \
+            --submit_for_review true \
+            --automatic_release false \
+            --force true \
+            --precheck_include_in_app_purchases false
+
+      - name: Remove temporary App Store Connect credentials
+        if: always()
+        shell: bash
+        run: |
+          rm -f "$RUNNER_TEMP/AuthKey_"*.p8 \
+            "$RUNNER_TEMP/app-store-connect-api-key.json"

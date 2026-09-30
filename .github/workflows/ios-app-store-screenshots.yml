@@ -1,0 +1,258 @@
+name: Capture App Store screenshots
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_screenshot_capture:
+        description: Confirm that this run should install and populate a clean iPhone Simulator with fictional data
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ampara-app-store-screenshots
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    if: ${{ inputs.confirm_screenshot_capture }}
+    runs-on: macos-26
+    timeout-minutes: 90
+    steps:
+      - name: Check out app
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Set up Java for Maestro
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install JavaScript dependencies
+        run: npm ci
+
+      - name: Run app checks
+        run: |
+          npm run typecheck
+          npm test -- --runInBand
+
+      - name: Generate the iOS project
+        run: npx expo prebuild --platform ios --clean --no-install
+
+      - name: Install CocoaPods dependencies
+        run: pod install --project-directory=ios
+
+      - name: Select a large iPhone simulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          import json
+          import os
+          import re
+          import subprocess
+          from pathlib import Path
+
+          inventory = json.loads(subprocess.check_output(
+              ["xcrun", "simctl", "list", "devices", "available", "-j"], text=True
+          ))
+          candidates = []
+          for runtime, devices in inventory["devices"].items():
+              if "iOS" not in runtime:
+                  continue
+              runtime_version = tuple(int(part) for part in re.findall(r"\d+", runtime))
+              for device in devices:
+                  if device.get("isAvailable") and device["name"] in {
+                      "iPhone 17 Pro Max",
+                      "iPhone 16 Pro Max",
+                  }:
+                      candidates.append((runtime_version, device["name"], device["udid"]))
+
+          if not candidates:
+              raise SystemExit("No iPhone 16 Pro Max or iPhone 17 Pro Max simulator is available.")
+
+          _, name, udid = max(candidates, key=lambda item: (item[0], item[1]))
+          print(f"Using {name} ({udid})")
+          with Path(os.environ["GITHUB_ENV"]).open("a") as env:
+              env.write(f"SIMULATOR_UDID={udid}\n")
+              env.write(f"SIMULATOR_NAME={name}\n")
+          PY
+
+      - name: Boot and prepare simulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcrun simctl erase "$SIMULATOR_UDID"
+          xcrun simctl boot "$SIMULATOR_UDID"
+          xcrun simctl bootstatus "$SIMULATOR_UDID" -b
+          xcrun simctl spawn "$SIMULATOR_UDID" defaults write -globalDomain AppleLanguages -array pt-BR
+          xcrun simctl spawn "$SIMULATOR_UDID" defaults write -globalDomain AppleLocale -string pt_BR
+          xcrun simctl shutdown "$SIMULATOR_UDID"
+          xcrun simctl boot "$SIMULATOR_UDID"
+          xcrun simctl bootstatus "$SIMULATOR_UDID" -b
+          xcrun simctl ui "$SIMULATOR_UDID" appearance light
+          xcrun simctl status_bar "$SIMULATOR_UDID" override \
+            --time '9:41' \
+            --dataNetwork wifi \
+            --wifiMode active \
+            --wifiBars 3 \
+            --cellularMode active \
+            --cellularBars 4 \
+            --batteryState charged \
+            --batteryLevel 100
+
+      - name: Install Maestro CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL "https://get.maestro.mobile.dev" | bash
+          printf '%s\n' "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+
+      - name: Build app for iPhone Simulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          workspace="$(python3 - <<'PY'
+          from pathlib import Path
+          workspaces = list(Path("ios").glob("*.xcworkspace"))
+          if len(workspaces) != 1:
+              raise SystemExit(f"Expected one Xcode workspace, found {len(workspaces)}")
+          print(workspaces[0])
+          PY
+          )"
+          scheme="$(xcodebuild -list -json -workspace "$workspace" | python3 -c 'import json,sys; schemes=json.load(sys.stdin).get("workspace",{}).get("schemes",[]); print(next((scheme for scheme in schemes if not scheme.startswith("Pods-")), ""))')"
+          if [[ -z "$scheme" ]]; then
+            echo "Could not determine the app scheme from $workspace." >&2
+            exit 1
+          fi
+
+          echo "Building $scheme for $SIMULATOR_NAME"
+          xcodebuild \
+            -workspace "$workspace" \
+            -scheme "$scheme" \
+            -configuration Release \
+            -sdk iphonesimulator \
+            -destination "platform=iOS Simulator,id=$SIMULATOR_UDID" \
+            -derivedDataPath "$RUNNER_TEMP/AmparaDerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+          app_path="$(python3 - <<'PY'
+          import os
+          import plistlib
+          from pathlib import Path
+
+          products = Path(os.environ["RUNNER_TEMP"]) / "AmparaDerivedData/Build/Products/Release-iphonesimulator"
+          matches = []
+          for app in products.glob("*.app"):
+              try:
+                  with (app / "Info.plist").open("rb") as stream:
+                      info = plistlib.load(stream)
+              except (OSError, plistlib.InvalidFileException):
+                  continue
+              if info.get("CFBundleIdentifier") == "com.gustavo.ampara":
+                  matches.append(app)
+          if len(matches) != 1:
+              raise SystemExit(f"Expected one com.gustavo.ampara app bundle, found {matches}")
+          print(matches[0])
+          PY
+          )"
+          xcrun simctl install "$SIMULATOR_UDID" "$app_path"
+
+      - name: Run Maestro and capture App Store screens
+        shell: bash
+        run: |
+          set -euo pipefail
+          maestro test \
+            --device "$SIMULATOR_UDID" \
+            --test-output-dir "$RUNNER_TEMP/maestro-output" \
+            .maestro/app-store-screenshots.yaml
+
+      - name: Collect and validate screenshot set
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          import os
+          import shutil
+          import struct
+          from pathlib import Path
+
+          source_root = Path(os.environ["RUNNER_TEMP"]) / "maestro-output"
+          destination = Path("store-screenshots/pt-BR")
+          destination.mkdir(parents=True, exist_ok=True)
+          expected = {
+              "01-hoje.png",
+              "02-agenda.png",
+              "03-tarefas.png",
+              "04-despesas.png",
+              "05-documentos.png",
+              "06-medicamentos.png",
+          }
+          screenshots = {
+              path.name: path
+              for path in source_root.rglob("*.png")
+              if path.name in expected
+          }
+          missing = expected - screenshots.keys()
+          if missing:
+              raise SystemExit(f"Maestro did not produce screenshots: {sorted(missing)}")
+
+          for filename in sorted(expected):
+              source = screenshots[filename]
+              with source.open("rb") as image:
+                  header = image.read(24)
+              if header[:8] != b"\x89PNG\r\n\x1a\n" or len(header) < 24:
+                  raise SystemExit(f"Invalid PNG screenshot: {source}")
+              dimensions = struct.unpack(">II", header[16:24])
+              if dimensions != (1320, 2868):
+                  raise SystemExit(
+                      f"{filename} is {dimensions[0]}x{dimensions[1]}, expected 1320x2868 "
+                      "for the selected Pro Max simulator."
+                  )
+              shutil.copy2(source, destination / filename)
+              print(f"Collected {filename}: {dimensions[0]}x{dimensions[1]}")
+
+          Path("store-screenshots/README.md").write_text(
+              "# Ampara App Store screenshots\n\n"
+              "Captured from the iOS Simulator by the Maestro flow. All profile and "
+              "care-record content is fictional and generated for this capture. The "
+              "images are 1320 × 2868 pixels and localized for `pt-BR`. Review the "
+              "screenshots before uploading them or submitting the app for review.\n",
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Upload App Store screenshot artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-store-screenshots
+          path: store-screenshots/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload Maestro diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maestro-screenshot-diagnostics
+          path: ${{ runner.temp }}/maestro-output/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Shut down simulator
+        if: always()
+        shell: bash
+        run: |
+          if [[ -n "${SIMULATOR_UDID:-}" ]]; then
+            xcrun simctl shutdown "$SIMULATOR_UDID" 2>/dev/null || true
+          fi

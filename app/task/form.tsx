@@ -90,7 +90,7 @@ export default function TaskFormScreen() {
     <AppScreen bottomInset={24}>
       <PageHeader eyebrow="TAREFAS" title={taskId ? 'Revise a tarefa.' : 'Qual é o próximo passo?'} subtitle="Deixe claro o que precisa ser feito, sem tentar resolver tudo agora." onBack={() => router.back()} />
       <ActivePersonNotice interactive={false} />
-      <Field label="Tarefa" value={title} onChangeText={setTitle} placeholder="Ex.: buscar o resultado do exame" autoCapitalize="sentences" />
+      <Field label="Tarefa" testID="task-title" value={title} onChangeText={setTitle} placeholder="Ex.: buscar o resultado do exame" autoCapitalize="sentences" />
       <DateField label="Data para lembrar" value={dueDate} onChange={setDueDate} optional />
       <Field label="Pessoa responsável" value={assignee} onChangeText={setAssignee} placeholder="Ex.: Ana (só uma anotação local)" autoCapitalize="words" hint="Esse nome não recebe aviso nem sincroniza com outros aparelhos." />
       <Field label="Observações" value={notes} onChangeText={setNotes} placeholder="Um detalhe que ajude depois" multiline />

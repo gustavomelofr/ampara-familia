@@ -34,8 +34,8 @@ export default function NewDocumentScreen() {
     <AppScreen bottomInset={24}>
       <PageHeader eyebrow="DOCUMENTOS" title="Onde está o documento?" subtitle="Registre o nome e um lugar para procurar." onBack={() => router.back()} />
       <ActivePersonNotice interactive={false} />
-      <Field label="Nome do documento" value={title} onChangeText={setTitle} placeholder="Ex.: cartão do plano de saúde" />
-      <Field label="Onde encontrar" value={location} onChangeText={setLocation} placeholder="Ex.: pasta azul na gaveta" />
+      <Field label="Nome do documento" testID="document-title" value={title} onChangeText={setTitle} placeholder="Ex.: cartão do plano de saúde" />
+      <Field label="Onde encontrar" testID="document-location" value={location} onChangeText={setLocation} placeholder="Ex.: pasta azul na gaveta" />
       <DateField label="Validade" value={expiresOn} onChange={setExpiresOn} optional />
       {error ? <AppText tone="danger" accessibilityRole="alert" style={styles.error}>{error}</AppText> : null}
       <PrimaryButton title={saving ? 'Salvando…' : 'Salvar documento'} onPress={() => void save()} disabled={saving || title.trim().length < 2} />

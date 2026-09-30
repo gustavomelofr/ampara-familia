@@ -1,0 +1,129 @@
+appId: com.gustavo.ampara
+---
+- launchApp:
+    appId: com.gustavo.ampara
+    clearState: true
+    permissions:
+      notifications: deny
+
+- assertVisible: "Como chamamos seu familiar?"
+- tapOn:
+    id: onboarding-person-name
+- inputText: "Helena Almeida"
+- hideKeyboard
+- tapOn: "Continuar"
+
+- assertVisible: "Adicionar compromisso"
+- tapOn: "Adicionar compromisso"
+- assertVisible: "O que precisa ficar marcado?"
+- tapOn:
+    id: event-title
+- inputText: "Consulta de rotina"
+- hideKeyboard
+- scrollUntilVisible:
+    element: "Salvar compromisso"
+    direction: DOWN
+- tapOn: "Salvar compromisso"
+- assertVisible: "Consulta de rotina"
+
+- tapOn: "Criar tarefa"
+- assertVisible: "Qual é o próximo passo?"
+- tapOn:
+    id: task-title
+- inputText: "Separar exames anteriores"
+- hideKeyboard
+- scrollUntilVisible:
+    element: "Salvar tarefa"
+    direction: DOWN
+- tapOn: "Salvar tarefa"
+- assertVisible: "Separar exames anteriores"
+- takeScreenshot:
+    path: "pt-BR/01-hoje"
+
+- tapOn: "Agenda"
+- assertVisible: "Datas para ter por perto."
+- takeScreenshot:
+    path: "pt-BR/02-agenda"
+
+- tapOn: "Tarefas"
+- assertVisible: "Um passo de cada vez."
+- takeScreenshot:
+    path: "pt-BR/03-tarefas"
+
+- tapOn: "Mais"
+- assertVisible: "Outras informações."
+- tapOn: "Despesas"
+- assertVisible: "Gastos da família."
+- tapOn: "Anotar um gasto"
+- assertVisible: "Anote um gasto."
+- tapOn:
+    id: expense-title
+- inputText: "Transporte para consulta"
+- tapOn:
+    id: expense-amount
+- inputText: "42,50"
+- hideKeyboard
+- scrollUntilVisible:
+    element: "Farmácia"
+    direction: DOWN
+- tapOn: "Farmácia"
+- scrollUntilVisible:
+    element: "Salvar gasto"
+    direction: DOWN
+- tapOn: "Salvar gasto"
+- assertVisible: "Transporte para consulta"
+- takeScreenshot:
+    path: "pt-BR/04-despesas"
+
+- tapOn: "Voltar"
+- assertVisible: "Outras informações."
+- tapOn: "Documentos"
+- assertVisible: "Saiba onde encontrar."
+- tapOn: "Adicionar documento"
+- assertVisible: "Onde está o documento?"
+- tapOn:
+    id: document-title
+- inputText: "Cartão do plano de saúde"
+- scrollUntilVisible:
+    element:
+      id: document-location
+    direction: DOWN
+- tapOn:
+    id: document-location
+- inputText: "Pasta de documentos da família"
+- hideKeyboard
+- scrollUntilVisible:
+    element: "Salvar documento"
+    direction: DOWN
+- tapOn: "Salvar documento"
+- assertVisible: "Cartão do plano de saúde"
+- takeScreenshot:
+    path: "pt-BR/05-documentos"
+
+- tapOn: "Voltar"
+- assertVisible: "Outras informações."
+- scrollUntilVisible:
+    element: "Medicamentos"
+    direction: DOWN
+- tapOn: "Medicamentos"
+- assertVisible: "Uma lista para consultar."
+- tapOn: "Adicionar à lista"
+- assertVisible: "Anote para consultar."
+- tapOn:
+    id: medication-name
+- inputText: "Vitamina D"
+- scrollUntilVisible:
+    element:
+      id: medication-schedule
+    direction: DOWN
+- tapOn:
+    id: medication-schedule
+- inputText: "Manhã · anotação fictícia"
+- hideKeyboard
+- scrollUntilVisible:
+    element: "Salvar anotação"
+    direction: DOWN
+- tapOn: "Salvar anotação"
+- assertVisible: "Vitamina D"
+- takeScreenshot:
+    path: "pt-BR/06-medicamentos"

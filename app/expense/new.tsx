@@ -46,8 +46,8 @@ export default function NewExpenseScreen() {
     <AppScreen bottomInset={24}>
       <PageHeader eyebrow="DESPESAS" title="Anote um gasto." subtitle="Um registro para a família consultar, não uma conta compartilhada." onBack={() => router.back()} />
       <ActivePersonNotice interactive={false} />
-      <Field label="O que foi pago?" value={title} onChangeText={setTitle} placeholder="Ex.: remédio de uso contínuo" />
-      <Field label="Valor em reais" value={amount} onChangeText={setAmount} placeholder="0,00" keyboardType="decimal-pad" hint="Use vírgula para separar os centavos, por exemplo 25,90." />
+      <Field label="O que foi pago?" testID="expense-title" value={title} onChangeText={setTitle} placeholder="Ex.: remédio de uso contínuo" />
+      <Field label="Valor em reais" testID="expense-amount" value={amount} onChangeText={setAmount} placeholder="0,00" keyboardType="decimal-pad" hint="Use vírgula para separar os centavos, por exemplo 25,90." />
       <OptionChips label="Categoria" value={category} onChange={setCategory} options={categories.map((value) => ({ value, label: value }))} />
       <DateField label="Data" value={spentOn} onChange={setSpentOn} />
       <Field label="Observações" value={notes} onChangeText={setNotes} placeholder="Opcional" multiline />
