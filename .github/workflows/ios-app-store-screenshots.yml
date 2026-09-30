@@ -142,10 +142,10 @@ jobs:
             -scheme "$scheme" \
             -configuration Release \
             -sdk iphonesimulator \
-            -arch arm64 \
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath "$RUNNER_TEMP/AmparaDerivedData" \
             CODE_SIGNING_ALLOWED=NO \
+            EXCLUDED_ARCHS=x86_64 \
             build
 
           app_path="$(python3 - <<'PY'
