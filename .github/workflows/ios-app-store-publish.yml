@@ -28,7 +28,7 @@ concurrency:
 
 jobs:
   upload-and-optionally-submit:
-    if: ${{ inputs.confirm_screenshot_upload }}
+    if: ${{ inputs.confirm_screenshot_upload || inputs.confirm_app_review_submission }}
     runs-on: macos-26
     timeout-minutes: 60
     steps:
@@ -127,6 +127,7 @@ jobs:
           printf 'ASC_API_KEY_PATH=%s\n' "$RUNNER_TEMP/app-store-connect-api-key.json" >> "$GITHUB_ENV"
 
       - name: Upload reviewed screenshots to App Store Connect
+        if: ${{ inputs.confirm_screenshot_upload }}
         shell: bash
         run: |
           set -euo pipefail
@@ -138,6 +139,8 @@ jobs:
             skip_metadata:true \
             skip_binary_upload:true \
             skip_app_version_update:true \
+            run_precheck_before_submit:false \
+            precheck_include_in_app_purchases:false \
             force:true
 
       - name: Submit version 1.0 for Apple App Review
