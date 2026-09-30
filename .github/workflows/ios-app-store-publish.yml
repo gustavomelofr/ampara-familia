@@ -148,17 +148,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          fastlane run upload_to_app_store \
-            app_identifier:com.gustavo.ampara \
-            app_version:1.0 \
-            "api_key_path:$ASC_API_KEY_PATH" \
-            skip_metadata:true \
-            skip_screenshots:true \
-            skip_binary_upload:true \
-            submit_for_review:true \
-            automatic_release:false \
-            force:true \
-            precheck_include_in_app_purchases:false
+          fastlane ios submit_app_review
 
       - name: Remove temporary App Store Connect credentials
         if: always()

@@ -1,0 +1,22 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Submit Ampara Família 1.0 for App Store review"
+  lane :submit_app_review do
+    upload_to_app_store(
+      app_identifier: "com.gustavo.ampara",
+      app_version: "1.0",
+      api_key_path: ENV.fetch("ASC_API_KEY_PATH"),
+      skip_metadata: true,
+      skip_screenshots: true,
+      skip_binary_upload: true,
+      submit_for_review: true,
+      automatic_release: false,
+      force: true,
+      precheck_include_in_app_purchases: false,
+      submission_information: {
+        content_rights_contains_third_party_content: false
+      }
+    )
+  end
+end
