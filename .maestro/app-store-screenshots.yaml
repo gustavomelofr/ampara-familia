@@ -10,7 +10,10 @@ appId: com.gustavo.ampara
 - tapOn:
     id: onboarding-person-name
 - inputText: "Helena Almeida"
-- hideKeyboard
+- scroll
+- scrollUntilVisible:
+    element: "Continuar"
+    direction: DOWN
 - tapOn: "Continuar"
 
 - assertVisible: "Adicionar compromisso"
@@ -19,7 +22,7 @@ appId: com.gustavo.ampara
 - tapOn:
     id: event-title
 - inputText: "Consulta de rotina"
-- hideKeyboard
+- scroll
 - scrollUntilVisible:
     element: "Salvar compromisso"
     direction: DOWN
@@ -31,7 +34,7 @@ appId: com.gustavo.ampara
 - tapOn:
     id: task-title
 - inputText: "Separar exames anteriores"
-- hideKeyboard
+- scroll
 - scrollUntilVisible:
     element: "Salvar tarefa"
     direction: DOWN
@@ -62,7 +65,7 @@ appId: com.gustavo.ampara
 - tapOn:
     id: expense-amount
 - inputText: "42,50"
-- hideKeyboard
+- scroll
 - scrollUntilVisible:
     element: "Farmácia"
     direction: DOWN
@@ -91,7 +94,7 @@ appId: com.gustavo.ampara
 - tapOn:
     id: document-location
 - inputText: "Pasta de documentos da família"
-- hideKeyboard
+- scroll
 - scrollUntilVisible:
     element: "Salvar documento"
     direction: DOWN
@@ -119,7 +122,7 @@ appId: com.gustavo.ampara
 - tapOn:
     id: medication-schedule
 - inputText: "Manhã · anotação fictícia"
-- hideKeyboard
+- scroll
 - scrollUntilVisible:
     element: "Salvar anotação"
     direction: DOWN
